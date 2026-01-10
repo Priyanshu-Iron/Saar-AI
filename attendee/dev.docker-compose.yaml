@@ -63,8 +63,10 @@ services:
     environment:
       POSTGRES_DB: attendee_development
       POSTGRES_USER: attendee_development_user
-      POSTGRES_PASSWORD: attendee_development_user
+      POSTGRES_PASSWORD: attendee_development_user # This is your password!
       PGDATA: /data/postgres
+    ports:
+      - "5432:5432"  # <--- ADD THIS LINE HERE
     volumes:
        - postgres:/data/postgres
     networks:
