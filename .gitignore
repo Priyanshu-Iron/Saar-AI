@@ -1,5 +1,7 @@
 token.txt
-
+/.idea
+.idea
+.idea/
 # Logs
 logs
 *.log
