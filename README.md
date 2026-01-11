@@ -1,4 +1,6 @@
 <div align="center">
+  <img src="SaarAI.png" alt="SaarAI Banner" width="600"/>
+  <br/><br/>
   <h1>🧠 SaarAI</h1>
   <p><strong>AI-Powered Meeting Intelligence</strong></p>
   <p><em>Turn every meeting into actionable insights, automatically</em></p>
