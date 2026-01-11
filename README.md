@@ -1,119 +1,95 @@
 <div align="center">
-  <img src="SaarAI.png" alt="SaarAI Banner" width="600"/>
+  <img src="SaarAI.png" alt="SaarAI" width="600"/>
   <br/><br/>
-  <h1>🧠 SaarAI</h1>
-  <p><strong>AI-Powered Meeting Intelligence</strong></p>
-  <p><em>Turn every meeting into actionable insights, automatically</em></p>
+  
+  **The Artificial Intelligence of Essence**
+  
+  *Turn every meeting into actionable insights, automatically*
   
   <br/>
   
   ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)
   ![LangChain](https://img.shields.io/badge/LangChain-Enabled-orange?logo=chainlink&logoColor=white)
   ![Deepgram](https://img.shields.io/badge/Deepgram-STT-purple?logo=deepgram&logoColor=white)
+  
+  [Features](#-key-features) • [How It Works](#-how-it-works) • [The Name](#-why-saarai) • [Credits](#-powered-by)
 </div>
 
 ---
 
 ## ✨ What is SaarAI?
 
-**SaarAI** is an intelligent meeting assistant that transforms raw meeting recordings into structured, actionable intelligence. Built on top of Attendee's meeting bot infrastructure, SaarAI automatically processes transcripts the moment a meeting ends.
+**SaarAI** is an intelligent meeting assistant that transforms raw meeting recordings into structured, actionable intelligence. Built on top of [Attendee's](https://github.com/AskAttendee/attendee) meeting bot infrastructure, it automatically processes transcripts the moment a meeting ends.
 
-No more manual note-taking. No more forgotten action items. Just clear, AI-generated summaries delivered automatically.
+> No more manual note-taking. No more forgotten action items. Just clear, AI-generated summaries — delivered automatically.
 
 ---
 
 ## 🚀 Key Features
 
-### 📝 Minutes of Meeting (MOM)
-Automatically generated meeting summaries including:
-- **Executive Summary** — What the meeting was about
-- **Key Discussion Points** — Main topics covered
-- **Decisions Made** — What was agreed upon
-- **Action Items** — Tasks with assigned owners
-
-### 💡 Meeting Insights
-Deep analysis of your meetings:
-- **Participation Analysis** — Who spoke the most, engagement levels
-- **Theme Detection** — Key topics and recurring themes
-- **Sentiment Overview** — Overall meeting tone
-- **Concerns & Blockers** — Issues that need attention
-
-### 🎯 Strategy Recommendations
-AI-powered next steps:
-- **Priority Actions** — What to focus on first
-- **Follow-up Suggestions** — Recommended next meetings
-- **Resource Allocation** — Team and time recommendations
-- **Risk Mitigation** — Potential issues to address
-
----
-
-## 🌍 Multi-Language Support
-
-SaarAI works seamlessly with **Hindi** and **English** meetings, powered by Deepgram's advanced multi-language speech recognition. Perfect for teams operating across languages.
+| Feature | What You Get |
+|---------|--------------|
+| 📝 **Minutes of Meeting** | Executive summary, key discussion points, decisions made, action items with owners |
+| 💡 **Meeting Insights** | Participation analysis, theme detection, sentiment overview, concerns & blockers |
+| 🎯 **Strategy Recommendations** | Priority actions, follow-up suggestions, resource allocation, risk mitigation |
+| 🌍 **Multi-Language** | Seamless Hindi + English support via Deepgram |
 
 ---
 
 ## ⚡ How It Works
 
-1. **Meeting Happens** — Your Attendee bot joins and records the meeting
-2. **Transcription** — Deepgram converts speech to text with speaker identification
-3. **SaarAI Processes** — The moment the meeting ends, AI analysis begins
-4. **Insights Delivered** — MOM, insights, and strategies generated automatically
+```
+📅 Meeting Happens     →     🎙️ Deepgram Transcribes     →     🧠 SaarAI Analyzes     →     ✨ Insights Delivered
+   (Attendee bot              (Speech-to-text with            (AI processing           (MOM, insights,
+    joins & records)           speaker identification)         begins instantly)         strategies ready)
+```
 
 ---
 
-## 🔮 Coming Soon
+## 💫 Why "SaarAI"?
 
-- 🔔 **Real-time Webhooks** — Get notified the instant your meeting insights are ready
-- 📊 **Dashboard** — Visual overview of all your meeting intelligence
-- 🔗 **Integrations** — Slack, Notion, and email delivery
-- 🎙️ **More Languages** — Expanding beyond Hindi and English
+The name **SaarAI** (सार + AI) carries deep meaning:
+
+| Component | Meaning |
+|-----------|---------|
+| **सार (Saar)** | Sanskrit/Hindi for *Essence, Gist, Summary* — the core substance after filtering the noise |
+| **AI** | Artificial Intelligence — your intelligent assistant |
+| **SaarAI** | *"The AI that extracts the essence"* |
+
+> 🎯 **The Vision**: You provide the long, complex discussion. SaarAI extracts the substance so you can focus on strategy.
+
+*Bonus: "Sarai" in Hebrew means "Princess" — giving our tool a distinguished identity!*
+
+---
+
+## 🔮 Roadmap
+
+- [x] PostgreSQL integration with Attendee
+- [x] Multi-language transcription (Hindi + English)
+- [ ] Real-time webhooks on meeting end
+- [ ] Dashboard for meeting intelligence
+- [ ] Slack, Notion & email integrations
+- [ ] More languages
 
 ---
 
 ## 🙏 Powered By
 
-<table>
-<tr>
-<td align="center" width="33%">
-<a href="https://github.com/AskAttendee/attendee">
-<strong>Attendee</strong>
-</a>
-<br/>
-<em>Open-source meeting bot platform</em>
-<br/>
-The foundation that makes SaarAI possible
-</td>
-<td align="center" width="33%">
-<a href="https://deepgram.com/">
-<strong>Deepgram</strong>
-</a>
-<br/>
-<em>Speech-to-Text</em>
-<br/>
-Multi-language transcription
-</td>
-<td align="center" width="33%">
-<a href="https://langchain.com/">
-<strong>LangChain</strong>
-</a>
-<br/>
-<em>LLM Framework</em>
-<br/>
-Flexible AI model switching
-</td>
-</tr>
-</table>
+<div align="center">
 
----
+| [**Attendee**](https://github.com/AskAttendee/attendee) | [**Deepgram**](https://deepgram.com/) | [**LangChain**](https://langchain.com/) |
+|:---:|:---:|:---:|
+| Open-source meeting bot platform | Multi-language speech-to-text | Flexible LLM framework |
+| *The foundation that makes this possible* | *Powers our transcription* | *Switch AI models easily* |
 
-## 📜 License
-
-MIT License — Free to use and modify
+</div>
 
 ---
 
 <div align="center">
-  <p>Built with ❤️ for smarter meetings</p>
-  <p><sub>Made by Priyanshu</sub></p>
+  
+  Built with ❤️ for smarter meetings
+  
+  **[Priyanshu](https://github.com/Priyanshu-Iron)**
+  
 </div>
