@@ -77,7 +77,7 @@ The name **SaarAI** (सार + AI) carries deep meaning:
 
 <div align="center">
 
-| [**Attendee**](https://github.com/AskAttendee/attendee) | [**Deepgram**](https://deepgram.com/) | [**LangChain**](https://langchain.com/) |
+| [**Attendee**](https://github.com/attendee-labs/attendee) | [**Deepgram**](https://deepgram.com/) | [**LangChain**](https://langchain.com/) |
 |:---:|:---:|:---:|
 | Open-source meeting bot platform | Multi-language speech-to-text | Flexible LLM framework |
 | *The foundation that makes this possible* | *Powers our transcription* | *Switch AI models easily* |

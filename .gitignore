@@ -2,6 +2,8 @@ token.txt
 /.idea
 .idea
 .idea/
+
+test_generators.py
 # Logs
 logs
 *.log
