@@ -9,3 +9,5 @@ langchain-community
 uvicorn[standard]
 langchain[openai]
 langchain[google-genai]
+bcrypt
+pyjwt
