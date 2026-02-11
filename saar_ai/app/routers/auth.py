@@ -39,7 +39,14 @@ def register(request: RegisterRequest):
         
         # 1. Create Organization
         db.execute(
-            text("INSERT INTO accounts_organization (name, created_at, updated_at, centicredits, version) VALUES (:name, NOW(), NOW(), 500, 0)"),
+            text("""INSERT INTO accounts_organization 
+                (name, created_at, updated_at, centicredits, version,
+                 is_webhooks_enabled, is_async_transcription_enabled, 
+                 is_managed_zoom_oauth_enabled, is_app_sessions_enabled,
+                 autopay_enabled, autopay_threshold_centricredits, autopay_amount_to_purchase_cents) 
+                VALUES (:name, NOW(), NOW(), 500, 0,
+                 true, false, true, false,
+                 false, 1000, 5000)"""),
             {"name": f"{request.email}'s organization"}
         )
         org_id = db.execute(text("SELECT currval(pg_get_serial_sequence('accounts_organization', 'id'))")).scalar()
@@ -56,8 +63,10 @@ def register(request: RegisterRequest):
         user_object_id = "usr_" + ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
         db.execute(
             text("""INSERT INTO accounts_user 
-                (email, password, username, organization_id, object_id, role, is_active, is_staff, is_superuser, date_joined)
-                VALUES (:email, :password, :username, :org_id, :obj_id, 'admin', true, false, false, NOW())"""),
+                (email, password, username, organization_id, object_id, role, 
+                 is_active, is_staff, is_superuser, date_joined, first_name, last_name)
+                VALUES (:email, :password, :username, :org_id, :obj_id, 'admin', 
+                 true, false, false, NOW(), '', '')"""),
             {"email": request.email, "password": hash_password(request.password), 
              "username": str(uuid.uuid4()), "org_id": org_id, "obj_id": user_object_id}
         )
