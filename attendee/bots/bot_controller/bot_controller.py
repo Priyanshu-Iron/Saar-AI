@@ -470,6 +470,7 @@ class BotController:
             raise Exception("No rtmp client found")
 
     def upload_recording_to_external_media_storage_if_enabled(self):
+        return # Disable external storage upload for now
         if not self.bot_in_db.external_media_storage_bucket_name():
             return
 
@@ -573,14 +574,18 @@ class BotController:
         if self.get_recording_file_location():
             self.upload_recording_to_external_media_storage_if_enabled()
 
-            logger.info("Telling file uploader to upload recording file...")
-            file_uploader = self.get_file_uploader()
-            file_uploader.upload_file(self.get_recording_file_location())
-            file_uploader.wait_for_upload()
-            logger.info("File uploader finished uploading file")
-            file_uploader.delete_file(self.get_recording_file_location())
+            # logger.info("Telling file uploader to upload recording file...")
+            # file_uploader = self.get_file_uploader()
+            # file_uploader.upload_file(self.get_recording_file_location())
+            # file_uploader.wait_for_upload()
+            # logger.info("File uploader finished uploading file")
+            
+            # Since we are not uploading to AWS, we just delete the local file
+            if os.path.exists(self.get_recording_file_location()):
+                os.remove(self.get_recording_file_location())
+            # file_uploader.delete_file(self.get_recording_file_location())
             logger.info("File uploader deleted file from local filesystem")
-            self.recording_file_saved(file_uploader.filename)
+            # self.recording_file_saved(file_uploader.filename)
 
         if self.bot_in_db.create_debug_recording():
             self.save_debug_recording()
@@ -642,9 +647,13 @@ class BotController:
                 return PipelineConfiguration.pure_transcription_bot()
 
         if self.bot_in_db.websocket_audio_url():
-            return PipelineConfiguration.recorder_bot_with_websocket_audio()
+            # return PipelineConfiguration.recorder_bot_with_websocket_audio()
+            # Disable video recording for now, force audio only
+            return PipelineConfiguration.audio_recorder_bot_with_websocket_audio()
 
-        return PipelineConfiguration.recorder_bot()
+        # return PipelineConfiguration.recorder_bot()
+        # Disable video recording for now, force audio only
+        return PipelineConfiguration.audio_recorder_bot()
 
     def get_gstreamer_sink_type(self):
         if self.pipeline_configuration.rtmp_stream_audio or self.pipeline_configuration.rtmp_stream_video:
