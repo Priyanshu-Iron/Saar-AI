@@ -1,12 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, meetings, generate
+from app.db.init_saarai_tables import init_saarai_tables
 
 app = FastAPI(
     title="SaarAI",
     description="AI-Powered Meeting Intelligence — MOM, Insights & Strategy",
     version="1.0.0",
 )
+
+# Create SaarAI tables on startup
+init_saarai_tables()
 
 app.add_middleware(
     CORSMiddleware,
