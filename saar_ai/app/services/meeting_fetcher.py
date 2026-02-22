@@ -1,6 +1,19 @@
 from sqlalchemy import text
 from app.db.connection import SessionLocal
 
+def get_all_bots(project_id: int):
+    db = SessionLocal()
+    try:
+        query = text("""
+            SELECT id, object_id, name, meeting_url, state, created_at
+            FROM bots_bot
+            WHERE project_id = :project_id
+            ORDER BY created_at DESC
+        """)
+        return db.execute(query, {"project_id": project_id}).mappings().all()
+    finally:
+        db.close()
+
 def get_all_completed_meetings(project_id: int):
     db = SessionLocal()
     try:
