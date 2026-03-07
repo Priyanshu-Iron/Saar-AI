@@ -5,7 +5,7 @@ import BrandLogo from "../components/ui/BrandLogo";
 
 export function Home() {
   return (
-    <section className="mx-auto max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_20px_60px_-35px_rgba(2,132,199,0.5)] sm:p-12">
+    <section className="mx-auto max-w-5xl rounded-3xl border border-white/60 bg-white/70 backdrop-blur-sm p-8 shadow-[0_20px_60px_-35px_rgba(13,89,242,0.35)] sm:p-12">
       <BrandLogo className="h-20" />
       <motion.p
         initial={{ opacity: 0, y: 8 }}
@@ -18,7 +18,7 @@ export function Home() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="mt-4 text-4xl font-semibold text-slate-900"
+        className="mt-4 text-4xl font-bold text-slate-900"
       >
         Turn meetings into decisions, automatically.
       </motion.h1>

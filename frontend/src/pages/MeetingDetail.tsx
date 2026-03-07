@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { meetingsApi, generateApi, type Meeting, type Participant } from "../api";
+import { meetingsApi, generateApi, type Meeting, type Participant, type Utterance } from "../api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Button from "../components/ui/Button";
@@ -22,9 +22,9 @@ type OutputData = { content: string; created_at: string };
 type Outputs = Record<string, OutputData>;
 
 const outputSections = [
-  { key: "mom", label: "📋 Minutes of Meeting", accent: "border-l-sky-500 bg-sky-50/30" },
-  { key: "insights", label: "💡 Insights", accent: "border-l-emerald-500 bg-emerald-50/30" },
-  { key: "strategy", label: "🎯 Strategy", accent: "border-l-purple-500 bg-purple-50/30" },
+  { key: "mom", label: "MOM", fullLabel: "Minutes of Meeting", accent: "border-l-primary-500 bg-primary-50/20", icon: "📋" },
+  { key: "insights", label: "Insights", fullLabel: "Key Insights", accent: "border-l-emerald-500 bg-emerald-50/20", icon: "💡" },
+  { key: "strategy", label: "Strategy", fullLabel: "Strategic Analysis", accent: "border-l-purple-500 bg-purple-50/20", icon: "🎯" },
 ] as const;
 
 export function MeetingDetail() {
@@ -35,6 +35,7 @@ export function MeetingDetail() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [outputs, setOutputs] = useState<Outputs>({});
   const [hasOutputs, setHasOutputs] = useState(false);
+  const [transcript, setTranscript] = useState<Utterance[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -45,12 +46,14 @@ export function MeetingDetail() {
     Promise.all([
       meetingsApi.detail(id),
       meetingsApi.outputs(id),
+      meetingsApi.transcript(id).catch(() => ({ transcript: [] })),
     ])
-      .then(([detail, outputsData]) => {
+      .then(([detail, outputsData, transcriptData]) => {
         setMeeting(detail.meeting);
         setParticipants(detail.participants);
         setOutputs(outputsData.outputs);
         setHasOutputs(outputsData.has_outputs);
+        setTranscript((transcriptData as any).transcript || []);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -61,7 +64,6 @@ export function MeetingDetail() {
     setError("");
     try {
       await generateApi.all(id);
-      // Re-fetch saved outputs
       const data = await meetingsApi.outputs(id);
       setOutputs(data.outputs);
       setHasOutputs(data.has_outputs);
@@ -73,12 +75,21 @@ export function MeetingDetail() {
     }
   };
 
+  const formatTime = (ms: number) => {
+    const secs = Math.floor(ms / 1000);
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-60 w-full" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-[400px] w-full" />
+          <Skeleton className="h-[400px] w-full" />
+        </div>
       </div>
     );
   }
@@ -102,41 +113,40 @@ export function MeetingDetail() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link to="/meetings" className="mb-2 inline-block text-xs text-slate-400 hover:text-sky-600">← Back to Meetings</Link>
+          <Link to="/meetings" className="mb-2 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary-600 transition-colors">
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+            Back to Meetings
+          </Link>
           <PageHeader title={meeting.name} subtitle={`Bot #${botId} • ${new Date(meeting.created_at).toLocaleString()}`} />
         </div>
         <span className={`mt-2 rounded-full px-3 py-1 text-xs font-medium ${state.color}`}>{state.text}</span>
       </div>
 
-      {/* Meeting Info Card */}
-      <Card title="Meeting Info">
+      {/* Meeting Info + Participants */}
+      <Card>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <dt className="text-xs text-slate-500">Meeting URL</dt>
+            <dt className="text-xs font-medium text-slate-500">Meeting URL</dt>
             <dd className="mt-1 break-all text-sm text-slate-800">{meeting.meeting_url}</dd>
           </div>
           <div>
-            <dt className="text-xs text-slate-500">Participants</dt>
+            <dt className="text-xs font-medium text-slate-500">Participants</dt>
             <dd className="mt-1 text-sm text-slate-800">{participants.length}</dd>
           </div>
           <div>
-            <dt className="text-xs text-slate-500">Created</dt>
+            <dt className="text-xs font-medium text-slate-500">Created</dt>
             <dd className="mt-1 text-sm text-slate-800">{new Date(meeting.created_at).toLocaleString()}</dd>
           </div>
           <div>
-            <dt className="text-xs text-slate-500">AI Outputs</dt>
+            <dt className="text-xs font-medium text-slate-500">AI Outputs</dt>
             <dd className="mt-1 text-sm text-slate-800">{hasOutputs ? "✅ Generated" : "⏳ Not yet generated"}</dd>
           </div>
         </dl>
-      </Card>
-
-      {/* Participants */}
-      {participants.length > 0 && (
-        <Card title="Participants">
-          <div className="flex flex-wrap gap-2">
+        {participants.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
             {participants.map((p, i) => (
               <div key={p.id || i} className="flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-[10px] font-semibold text-sky-700">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
                   {(p.full_name || "?").charAt(0).toUpperCase()}
                 </div>
                 <span className="text-slate-700">{p.full_name || "Unknown"}</span>
@@ -144,23 +154,54 @@ export function MeetingDetail() {
               </div>
             ))}
           </div>
-        </Card>
-      )}
+        )}
+      </Card>
 
-      {/* AI Outputs Section */}
+      {/* Split View: Transcript + AI Outputs */}
       {isCompleted && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <Card>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Left: Transcript */}
+          <Card title="📝 Transcript" className="lg:max-h-[600px] lg:overflow-hidden lg:flex lg:flex-col">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {transcript.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8">No transcript available.</p>
+              ) : (
+                transcript.map((u, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: Math.min(i * 0.01, 0.3) }}
+                    className="flex items-start gap-3 rounded-xl bg-slate-50/60 p-3"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-semibold text-primary-700">
+                      {(u.speaker || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-700">{u.speaker}</span>
+                        <span className="text-[10px] text-slate-400">{formatTime(u.timestamp_ms)}</span>
+                      </div>
+                      <p className="mt-0.5 text-sm text-slate-600 leading-relaxed">{u.text}</p>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Right: AI Outputs */}
+          <Card className="lg:max-h-[600px] lg:overflow-hidden lg:flex lg:flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-semibold text-slate-800">🤖 AI Outputs</h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {hasOutputs ? "Generated and saved. View below." : "Generate MOM, Insights, and Strategy for this meeting."}
+                  {hasOutputs ? "Generated and saved." : "Generate MOM, Insights, and Strategy."}
                 </p>
               </div>
               {!hasOutputs && (
                 <Button onClick={handleGenerate} disabled={generating}>
-                  {generating ? "Generating… (may take a minute)" : "Generate All"}
+                  {generating ? "Generating…" : "Generate All"}
                 </Button>
               )}
               {hasOutputs && (
@@ -182,10 +223,10 @@ export function MeetingDetail() {
             )}
 
             {hasOutputs && !generating && (
-              <div className="mt-4">
+              <div className="mt-4 flex-1 overflow-y-auto">
                 {/* Tabs */}
-                <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-                  {outputSections.map(({ key, label }) => (
+                <div className="flex gap-1 rounded-xl bg-slate-100/80 p-1">
+                  {outputSections.map(({ key, label, icon }) => (
                     <button
                       key={key}
                       onClick={() => setActiveTab(key)}
@@ -196,13 +237,13 @@ export function MeetingDetail() {
                           : "text-slate-500 hover:text-slate-700",
                       ].join(" ")}
                     >
-                      {label}
+                      {icon} {label}
                     </button>
                   ))}
                 </div>
 
                 {/* Content */}
-                {outputSections.map(({ key, label, accent }) => {
+                {outputSections.map(({ key, fullLabel, accent, icon }) => {
                   if (activeTab !== key) return null;
                   const data = outputs[key];
                   return (
@@ -213,7 +254,7 @@ export function MeetingDetail() {
                       className={`mt-4 rounded-xl border border-slate-200 p-5 border-l-4 ${accent}`}
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-semibold text-slate-700">{label}</h4>
+                        <h4 className="text-sm font-semibold text-slate-700">{icon} {fullLabel}</h4>
                         {data?.created_at && (
                           <span className="text-[10px] text-slate-400">
                             Generated {new Date(data.created_at).toLocaleString()}
@@ -243,15 +284,8 @@ export function MeetingDetail() {
               </div>
             )}
           </Card>
-        </motion.div>
+        </div>
       )}
-
-      {/* Quick Links */}
-      <div className="flex gap-3">
-        <Link to={`/meetings/${botId}/transcript`}>
-          <Button variant="secondary">View Transcript</Button>
-        </Link>
-      </div>
     </div>
   );
 }

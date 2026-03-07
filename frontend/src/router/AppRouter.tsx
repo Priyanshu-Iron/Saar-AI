@@ -3,12 +3,14 @@ import AppShell from "../layouts/AppShell";
 import IndexRedirect from "../components/auth/IndexRedirect";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import PublicOnlyRoute from "../components/auth/PublicOnlyRoute";
+import Chat from "../pages/Chat";
 import Dashboard from "../pages/Dashboard";
 import Home from "../pages/Home";
 import Login from "../pages/Login";
 import MeetingDetail from "../pages/MeetingDetail";
 import Meetings from "../pages/Meetings";
 import NotFound from "../pages/NotFound";
+import Settings from "../pages/Settings";
 import Signup from "../pages/Signup";
 import Transcript from "../pages/Transcript";
 
@@ -33,6 +35,8 @@ export const appRouter = createBrowserRouter([
           { path: "meetings", element: <Meetings /> },
           { path: "meetings/:botId", element: <MeetingDetail /> },
           { path: "meetings/:botId/transcript", element: <Transcript /> },
+          { path: "chat", element: <Chat /> },
+          { path: "settings", element: <Settings /> },
         ],
       },
       { path: "*", element: <NotFound /> },
