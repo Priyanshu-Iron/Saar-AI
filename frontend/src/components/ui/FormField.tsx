@@ -1,7 +1,6 @@
-import { motion } from "framer-motion";
 import { type InputHTMLAttributes, useState } from "react";
 
-type FormFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd"> & {
+type FormFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   hint?: string;
 };
@@ -11,9 +10,8 @@ export function FormField({ label, hint, className = "", ...props }: FormFieldPr
 
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-medium tracking-wide text-slate-600">{label}</span>
-      <motion.input
-        // @ts-ignore framer-motion types conflict with React types
+      <span className="mb-1.5 block text-[13px] font-medium text-[#425466]">{label}</span>
+      <input
         onFocus={(event) => {
           setFocused(true);
           props.onFocus?.(event);
@@ -22,20 +20,16 @@ export function FormField({ label, hint, className = "", ...props }: FormFieldPr
           setFocused(false);
           props.onBlur?.(event);
         }}
-        animate={{
-          boxShadow: focused
-            ? "0 0 0 4px rgba(13,89,242,0.12)"
-            : "0 0 0 0px rgba(13,89,242,0)",
-        }}
-        transition={{ duration: 0.2 }}
         className={[
-          "w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition-colors",
-          focused ? "border-primary-500" : "border-slate-200 hover:border-slate-300",
+          "w-full rounded-md border bg-white px-3 py-2 text-sm text-[#0a2540] outline-none transition-all duration-150 placeholder:text-[#8898aa]",
+          focused
+            ? "border-[#635bff] ring-2 ring-[#635bff]/20"
+            : "border-[#e3e8ee] hover:border-[#c4cdd5] shadow-[0_1px_2px_rgba(50,50,93,0.06)]",
           className,
         ].join(" ")}
         {...props}
       />
-      {hint ? <span className="mt-1.5 block text-xs text-slate-500">{hint}</span> : null}
+      {hint ? <span className="mt-1.5 block text-xs text-[#697386]">{hint}</span> : null}
     </label>
   );
 }

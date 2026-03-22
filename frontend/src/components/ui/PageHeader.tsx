@@ -9,8 +9,8 @@ export function PageHeader({ title, subtitle, className = "", action }: PageHead
   return (
     <header className={["flex items-start justify-between gap-4", className].join(" ")}>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+        <h1 className="text-2xl font-semibold text-[#0a2540] tracking-tight">{title}</h1>
+        {subtitle ? <p className="mt-1 text-sm text-[#697386]">{subtitle}</p> : null}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </header>

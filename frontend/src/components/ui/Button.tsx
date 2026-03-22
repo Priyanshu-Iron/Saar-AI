@@ -1,19 +1,18 @@
-import { motion } from "framer-motion";
 import { type ButtonHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
-type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd"> & {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   fullWidth?: boolean;
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary-600 text-white hover:bg-primary-500 shadow-[0_8px_24px_-8px_rgba(13,89,242,0.5)] hover:shadow-[0_12px_28px_-8px_rgba(13,89,242,0.6)]",
-  secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200",
-  ghost: "bg-white/70 text-slate-700 hover:bg-white border border-slate-200",
-  danger: "bg-red-600 text-white hover:bg-red-500 shadow-[0_8px_24px_-8px_rgba(220,38,38,0.5)]",
+    "bg-[#635bff] text-white hover:bg-[#7a73ff] shadow-[0_2px_5px_-1px_rgba(50,50,93,0.25),0_1px_3px_-1px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_12px_-2px_rgba(50,50,93,0.3),0_3px_7px_-3px_rgba(0,0,0,0.12)]",
+  secondary: "bg-white text-[#425466] border border-[#e3e8ee] hover:bg-[#f6f9fc] shadow-[0_1px_2px_rgba(50,50,93,0.08)]",
+  ghost: "text-[#425466] hover:bg-[#f6f9fc] hover:text-[#0a2540]",
+  danger: "bg-[#e25950] text-white hover:bg-[#d44940] shadow-[0_2px_5px_-1px_rgba(226,89,80,0.4)]",
 };
 
 export function Button({
@@ -24,12 +23,9 @@ export function Button({
   ...props
 }: ButtonProps) {
   return (
-    <motion.button
-      // @ts-ignore framer-motion types conflict with React types
-      whileHover={{ y: -1, scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
+    <button
       className={[
-        "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 disabled:opacity-60 disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635bff]/40 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
         variantClasses[variant],
         fullWidth ? "w-full" : "",
         className,
@@ -37,7 +33,7 @@ export function Button({
       {...props}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 
