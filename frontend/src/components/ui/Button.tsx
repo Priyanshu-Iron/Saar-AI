@@ -1,7 +1,6 @@
-import { motion } from "framer-motion";
 import { type ButtonHTMLAttributes } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -10,9 +9,10 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-sky-600 text-white hover:bg-sky-500 shadow-[0_10px_30px_-15px_rgba(2,132,199,0.7)]",
-  secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200",
-  ghost: "bg-white/70 text-slate-700 hover:bg-white border border-slate-200",
+    "bg-[#635bff] text-white hover:bg-[#7a73ff] shadow-[0_2px_5px_-1px_rgba(50,50,93,0.25),0_1px_3px_-1px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_12px_-2px_rgba(50,50,93,0.3),0_3px_7px_-3px_rgba(0,0,0,0.12)]",
+  secondary: "bg-white text-[#425466] border border-[#e3e8ee] hover:bg-[#f6f9fc] shadow-[0_1px_2px_rgba(50,50,93,0.08)]",
+  ghost: "text-[#425466] hover:bg-[#f6f9fc] hover:text-[#0a2540]",
+  danger: "bg-[#e25950] text-white hover:bg-[#d44940] shadow-[0_2px_5px_-1px_rgba(226,89,80,0.4)]",
 };
 
 export function Button({
@@ -23,11 +23,9 @@ export function Button({
   ...props
 }: ButtonProps) {
   return (
-    <motion.button
-      whileHover={{ y: -1, scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+    <button
       className={[
-        "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60 disabled:opacity-60",
+        "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#635bff]/40 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none",
         variantClasses[variant],
         fullWidth ? "w-full" : "",
         className,
@@ -35,7 +33,7 @@ export function Button({
       {...props}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 

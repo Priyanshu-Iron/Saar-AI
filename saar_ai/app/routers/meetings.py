@@ -2,6 +2,7 @@ import os
 import httpx
 import secrets
 import string
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy import text as sa_text
 from pydantic import BaseModel
@@ -18,6 +19,8 @@ from app.services.meeting_fetcher import (
     verify_bot_access,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/meetings", tags=["Meetings"])
 
 # --- Schemas ---
@@ -27,6 +30,7 @@ class CreateMeetingRequest(BaseModel):
 
 # Attendee's Django API runs on a separate port (default 8000)
 ATTENDEE_API_BASE = os.getenv("ATTENDEE_API_URL", "http://localhost:8000")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://rohan-realizing-cicely.ngrok-free.dev/my-ai-handler")
 
 # --- Create Meeting ---
 @router.post("")
@@ -39,6 +43,21 @@ def create_meeting(request: CreateMeetingRequest, authorization: str = Header(..
     # Extract the raw key from "Bearer <key>" → "Token <key>" for attendee
     raw_key = authorization.replace("Bearer ", "").strip()
     
+    # Build the payload with Deepgram transcription settings
+    payload = {
+        "meeting_url": request.meeting_url,
+        "bot_name": request.bot_name,
+        "transcription_settings": {
+            "deepgram": {
+                "model": "nova-3",
+                "language": "multi",
+            }
+        },
+    }
+    
+    logger.info(f"Sending bot creation payload to attendee: {payload}")
+    print(f"[DEBUG] Bot creation payload: {payload}")
+    
     try:
         resp = httpx.post(
             f"{ATTENDEE_API_BASE}/api/v1/bots",
@@ -46,10 +65,7 @@ def create_meeting(request: CreateMeetingRequest, authorization: str = Header(..
                 "Authorization": f"Token {raw_key}",
                 "Content-Type": "application/json",
             },
-            json={
-                "meeting_url": request.meeting_url,
-                "bot_name": request.bot_name,
-            },
+            json=payload,
             timeout=15.0,
         )
         

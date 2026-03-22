@@ -1,7 +1,10 @@
 import hashlib
+import json
 import secrets
 import string
 import uuid
+import os
+from cryptography.fernet import Fernet
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import text
@@ -9,6 +12,10 @@ from app.db.connection import SessionLocal
 from app.auth.utils import hash_password, verify_password, generate_api_key, hash_api_key
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+# Read Deepgram API key and encryption key from environment
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "4d52f05bd6b5ef846da7955880133ee7fe77dd54")
+CREDENTIALS_ENCRYPTION_KEY = os.getenv("CREDENTIALS_ENCRYPTION_KEY", "AnRIKHwGXbiYVMioIY1SBHHMpZzRUDCDbGj_IlFchAk=")
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -58,6 +65,16 @@ def register(request: RegisterRequest):
             {"name": f"{request.email}'s project", "org_id": org_id, "obj_id": proj_object_id}
         )
         project_id = db.execute(text("SELECT currval(pg_get_serial_sequence('bots_project', 'id'))")).scalar()
+        
+        # 2.5. Create Deepgram Credential for this project
+        f = Fernet(CREDENTIALS_ENCRYPTION_KEY.encode() if isinstance(CREDENTIALS_ENCRYPTION_KEY, str) else CREDENTIALS_ENCRYPTION_KEY)
+        deepgram_cred_data = json.dumps({"api_key": DEEPGRAM_API_KEY})
+        encrypted_cred = f.encrypt(deepgram_cred_data.encode())
+        db.execute(
+            text("""INSERT INTO bots_credentials (project_id, credential_type, _encrypted_data, created_at, updated_at)
+                VALUES (:project_id, 1, :encrypted_data, NOW(), NOW())"""),
+            {"project_id": project_id, "encrypted_data": encrypted_cred}
+        )
         
         # 3. Create User
         user_object_id = "usr_" + ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))

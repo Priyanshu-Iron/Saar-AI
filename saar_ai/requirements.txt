@@ -12,3 +12,4 @@ langchain[google-genai]
 bcrypt
 pyjwt
 httpx
+cryptography

@@ -112,7 +112,9 @@ class BotController:
         return self.save_utterances_for_individual_audio_chunks() or self.bot_in_db.record_async_transcription_audio_chunks()
 
     def disable_incoming_video_for_web_bots(self):
-        return not (self.pipeline_configuration.record_video or self.pipeline_configuration.rtmp_stream_video)
+        # Disabled because Google Meet UI changed and the video button in Settings is no longer interactable
+        # This was just a bandwidth optimization, not essential for recording/transcription
+        return False
 
     def create_google_meet_bot_login_session(self):
         if not self.bot_in_db.google_meet_use_bot_login():
