@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Card from "../components/ui/Card";
 import Thread from "../components/ui/Thread";
 
 const primaryLink =
@@ -35,7 +36,7 @@ export function Home() {
           </div>
         </div>
 
-        <div className="rounded-panel border border-line bg-surface p-5">
+        <Card noPadding className="p-5">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-body">Q3 vendor review</span>
             <span className="text-small text-ink-2">started 14:02</span>
@@ -68,7 +69,7 @@ export function Home() {
               </ul>
             </div>
           </div>
-        </div>
+        </Card>
       </section>
 
       <section className="pb-20">
