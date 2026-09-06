@@ -4,11 +4,8 @@ import secrets
 import string
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Header
-from sqlalchemy import text as sa_text
 from pydantic import BaseModel
-from sqlalchemy import text
 from app.auth.dependencies import verify_api_key
-from app.db.connection import SessionLocal
 from app.services.meeting_fetcher import (
     get_all_bots,
     get_all_completed_meetings,
@@ -18,6 +15,7 @@ from app.services.meeting_fetcher import (
     get_chat_messages,
     verify_bot_access,
 )
+from app.services.outputs_store import get_outputs, get_recent_with_teasers
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +110,13 @@ def list_meetings(project_id: int = Depends(verify_api_key)):
         "meetings": [dict(m) for m in meetings]
     }
 
+# --- Recent finished meetings with a one-line teaser (Dashboard) ---
+@router.get("/recent")
+def recent_meetings(limit: int = 5, project_id: int = Depends(verify_api_key)):
+    limit = max(1, min(limit, 20))
+    meetings = get_recent_with_teasers(project_id, limit)
+    return {"count": len(meetings), "meetings": meetings}
+
 # --- Meeting detail ---
 @router.get("/{bot_id}")
 def meeting_detail(bot_id: int, project_id: int = Depends(verify_api_key)):
@@ -157,25 +162,10 @@ def meeting_chat(bot_id: int, project_id: int = Depends(verify_api_key)):
 def meeting_outputs(bot_id: int, project_id: int = Depends(verify_api_key)):
     if not verify_bot_access(bot_id, project_id):
         raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    db = SessionLocal()
-    try:
-        rows = db.execute(
-            sa_text("""
-                SELECT output_type, content, created_at
-                FROM saarai_outputs
-                WHERE bot_id = :bot_id AND project_id = :project_id
-                ORDER BY output_type
-            """),
-            {"bot_id": bot_id, "project_id": project_id},
-        ).mappings().all()
-        
-        outputs = {row["output_type"]: {"content": row["content"], "created_at": str(row["created_at"])} for row in rows}
-        return {
-            "bot_id": bot_id,
-            "has_outputs": len(outputs) > 0,
-            "outputs": outputs,
-        }
-    finally:
-        db.close()
+    outputs = get_outputs(bot_id, project_id)
+    return {
+        "bot_id": bot_id,
+        "has_outputs": any(o["format"] == "json" for o in outputs.values()),
+        "outputs": outputs,
+    }
 

@@ -11,7 +11,8 @@ describe("breadcrumbFor", () => {
 
   it("nests meeting pages under Meetings", () => {
     expect(breadcrumbFor("/meetings/42")).toBe("Meetings / Meeting #42");
-    expect(breadcrumbFor("/meetings/42/transcript")).toBe("Meetings / Meeting #42 / Transcript");
+    expect(breadcrumbFor("/meetings/42", "Q3 vendor review")).toBe("Meetings / Q3 vendor review");
+    expect(breadcrumbFor("/meetings/42/transcript", "Q3")).toBe("Meetings / Q3 / Transcript");
   });
 
   it("falls back to SaarAI", () => {

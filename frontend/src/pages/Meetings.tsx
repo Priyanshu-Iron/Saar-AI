@@ -1,18 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { meetingsApi, type Meeting } from "../api";
 import Card from "../components/ui/Card";
 import EmptyState from "../components/ui/EmptyState";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { LinkButton } from "../components/ui/LinkButton";
 import Skeleton from "../components/ui/Skeleton";
-import Thread from "../components/ui/Thread";
-import { botStateToThreadState } from "../lib/status";
+import StatusThread from "../components/meeting/StatusThread";
+import { botStateToThreadState, isLiveState } from "../lib/status";
 
-const FILTER_STATES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11];
-
-const PRIMARY_LINK =
-  "inline-flex items-center justify-center rounded-control bg-violet px-3 py-1.5 text-small text-white transition-colors duration-150 hover:bg-violet/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground";
-const SECONDARY_LINK =
-  "inline-flex items-center justify-center rounded-control border border-line bg-surface px-3 py-1.5 text-small text-ink-2 transition-colors duration-150 hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground";
+const FILTER_STATES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
 type SortField = "name" | "date" | "state";
 type SortDir = "asc" | "desc";
@@ -21,6 +18,7 @@ export function Meetings() {
   const [searchParams] = useSearchParams();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("date");
@@ -28,9 +26,20 @@ export function Meetings() {
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
 
-  useEffect(() => {
-    meetingsApi.list().then((data) => setMeetings(data.meetings)).catch(() => { }).finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await meetingsApi.list();
+      setMeetings(data.meetings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't load meetings.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void load(); }, [load]);
 
   // The top bar navigates to /meetings?q=… while this page is already mounted,
   // so the query has to be read on every searchParams change, not just on mount.
@@ -56,7 +65,7 @@ export function Meetings() {
     </svg>
   );
 
-  const filtered = meetings
+  const sorted = meetings
     .filter((m) => {
       if (statusFilter !== "all" && String(m.state) !== statusFilter) return false;
       if (search && !m.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -70,9 +79,11 @@ export function Meetings() {
       return sortDir === "asc" ? cmp : -cmp;
     });
 
+  // Live meetings sort to the top within any sort order
+  const ordered = [...sorted.filter((m) => isLiveState(m.state)), ...sorted.filter((m) => !isLiveState(m.state))];
 
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.ceil(ordered.length / PER_PAGE);
+  const paginated = ordered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   // Reset page when filters change
   useEffect(() => { setPage(1); }, [search, statusFilter]);
@@ -111,10 +122,10 @@ export function Meetings() {
             <option key={code} value={code}>{botStateToThreadState(code).label}</option>
           ))}
         </select>
-        <span className="text-small text-ink-2">{filtered.length} meeting{filtered.length !== 1 ? "s" : ""}</span>
+        <span className="text-small text-ink-2">{ordered.length} meeting{ordered.length !== 1 ? "s" : ""}</span>
       </div>
 
-      {/* Table */}
+      {/* Table or error */}
       <div>
         <Card noPadding>
           {loading ? (
@@ -123,7 +134,11 @@ export function Meetings() {
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : error ? (
+            <div className="p-6">
+              <ErrorNotice message={error} onRetry={() => void load()} />
+            </div>
+          ) : ordered.length === 0 ? (
             <div className="px-6">
               {meetings.length === 0 ? (
                 <EmptyState
@@ -131,9 +146,7 @@ export function Meetings() {
                   title="No meetings yet"
                   body="Send a bot to your next call to see it here."
                   action={
-                    <Link to="/dashboard" className={PRIMARY_LINK}>
-                      Send bot
-                    </Link>
+                    <LinkButton to="/dashboard">Send bot</LinkButton>
                   }
                 />
               ) : (
@@ -160,48 +173,30 @@ export function Meetings() {
                       <th className="px-5 py-3 text-small text-ink-2 cursor-pointer select-none" onClick={() => toggleSort("state")}>
                         Status <SortIcon field="state" />
                       </th>
-                      <th className="px-5 py-3 text-small text-ink-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginated.map((meeting) => {
-                      const isCompleted = meeting.state === 9;
+                      const status = botStateToThreadState(meeting.state);
                       return (
                         <tr
                           key={meeting.id}
-                          className="border-b border-line last:border-0 hover:bg-raised transition-colors"
+                          className="relative border-b border-line last:border-0 hover:bg-raised transition-colors"
                         >
                           <td className="px-5 py-3.5">
-                            <p className="text-ink truncate max-w-[280px]">{meeting.name}</p>
+                            <Link
+                              to={`/meetings/${meeting.id}`}
+                              className="font-medium text-ink after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                            >
+                              {meeting.name}
+                            </Link>
                           </td>
                           <td className="px-5 py-3.5 text-ink-2 hidden sm:table-cell">#{meeting.id}</td>
                           <td className="px-5 py-3.5 text-ink-2">
                             {new Date(meeting.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </td>
                           <td className="px-5 py-3.5">
-                            {(() => {
-                              const status = botStateToThreadState(meeting.state);
-                              return (
-                                <span className="inline-flex items-center gap-3">
-                                  <Thread state={status.state} size="inline" label={`Status: ${status.label}`} />
-                                  <span className="text-small text-ink-2">{status.label}</span>
-                                </span>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-5 py-3.5 text-right">
-                            {isCompleted ? (
-                              <div className="flex justify-end gap-2">
-                                <Link to={`/meetings/${meeting.id}`} className={SECONDARY_LINK}>
-                                  Details
-                                </Link>
-                                <Link to={`/meetings/${meeting.id}`} className={PRIMARY_LINK}>
-                                  Open essence
-                                </Link>
-                              </div>
-                            ) : (
-                              <span className="text-small text-ink-2">—</span>
-                            )}
+                            <StatusThread state={status.state} label={status.label} />
                           </td>
                         </tr>
                       );
@@ -212,7 +207,7 @@ export function Meetings() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between border-t border-line px-5 py-3">
                   <p className="text-small text-ink-2">
-                    Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
+                    Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, ordered.length)} of {ordered.length}
                   </p>
                   <div className="flex items-center gap-1">
                     <button

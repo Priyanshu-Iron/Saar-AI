@@ -13,3 +13,4 @@ bcrypt
 pyjwt
 httpx
 cryptography
+pytest
