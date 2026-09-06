@@ -23,8 +23,8 @@ describe("botStateToThreadState", () => {
     expect(botStateToThreadState(9)).toEqual({ state: "ready", label: "Essence ready" });
   });
 
-  it("maps error and unknown states to joined with Unavailable", () => {
-    expect(botStateToThreadState(7)).toEqual({ state: "joined", label: "Unavailable" });
+  it("maps the error state to joined with Error, and unknown states to Unavailable", () => {
+    expect(botStateToThreadState(7)).toEqual({ state: "joined", label: "Error" });
     expect(botStateToThreadState(42)).toEqual({ state: "joined", label: "Unavailable" });
   });
 });

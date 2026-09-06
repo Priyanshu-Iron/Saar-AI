@@ -9,6 +9,7 @@ const MAP: Record<number, ThreadStatus> = {
   4: { state: "recording", label: "Recording" },
   5: { state: "transcribing", label: "Leaving" },
   6: { state: "transcribing", label: "Transcribing" },
+  7: { state: "joined", label: "Error" },
   8: { state: "joined", label: "In waiting room" },
   9: { state: "ready", label: "Essence ready" },
   11: { state: "joined", label: "Scheduled" },
