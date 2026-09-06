@@ -1,30 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { botStateToThreadState } from "../status";
+import { botStateToThreadState, isFinishedState, isLiveState } from "../status";
 
 describe("botStateToThreadState", () => {
-  it("maps pre-join states to joined with their own label", () => {
-    expect(botStateToThreadState(1)).toEqual({ state: "joined", label: "Ready to join" });
-    expect(botStateToThreadState(2)).toEqual({ state: "joined", label: "Joining" });
-    expect(botStateToThreadState(8)).toEqual({ state: "joined", label: "In waiting room" });
-    expect(botStateToThreadState(11)).toEqual({ state: "joined", label: "Scheduled" });
+  it.each([
+    [1, "joined", "Ready to join"], [2, "joined", "Joining"], [8, "joined", "In waiting room"], [11, "joined", "Scheduled"], [12, "joined", "Staged"],
+    [3, "recording", "In meeting"], [4, "recording", "Recording"], [13, "recording", "Recording paused"],
+    [14, "recording", "Joining breakout room"], [15, "recording", "Leaving breakout room"], [16, "recording", "Recording permission denied"],
+    [5, "transcribing", "Leaving"], [6, "transcribing", "Transcribing"],
+    [9, "ready", "Essence ready"], [10, "ready", "Deleted"],
+    [7, "failed", "Failed"],
+  ])("maps %i", (code, state, label) => {
+    expect(botStateToThreadState(code as number)).toEqual({ state, label });
   });
 
-  it("maps in-meeting states to recording", () => {
-    expect(botStateToThreadState(3)).toEqual({ state: "recording", label: "In meeting" });
-    expect(botStateToThreadState(4)).toEqual({ state: "recording", label: "Recording" });
-  });
-
-  it("maps post-meeting processing to transcribing", () => {
-    expect(botStateToThreadState(5)).toEqual({ state: "transcribing", label: "Leaving" });
-    expect(botStateToThreadState(6)).toEqual({ state: "transcribing", label: "Transcribing" });
-  });
-
-  it("maps 9 to ready", () => {
-    expect(botStateToThreadState(9)).toEqual({ state: "ready", label: "Essence ready" });
-  });
-
-  it("maps the error state to joined with Error, and unknown states to Unavailable", () => {
-    expect(botStateToThreadState(7)).toEqual({ state: "joined", label: "Error" });
+  it("maps unknown codes to joined Unavailable", () => {
     expect(botStateToThreadState(42)).toEqual({ state: "joined", label: "Unavailable" });
+  });
+});
+
+describe("helpers", () => {
+  it("isLiveState covers in-call states", () => {
+    for (const s of [3, 4, 13, 14, 15, 16]) expect(isLiveState(s)).toBe(true);
+    for (const s of [1, 2, 5, 6, 7, 9]) expect(isLiveState(s)).toBe(false);
+  });
+  it("isFinishedState", () => {
+    expect(isFinishedState(9)).toBe(true);
+    expect(isFinishedState(10)).toBe(true);
+    expect(isFinishedState(4)).toBe(false);
   });
 });

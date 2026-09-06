@@ -75,7 +75,7 @@ export function MeetingDetail() {
       .then(([detail, outputsData, transcriptData]) => {
         setMeeting(detail.meeting);
         setParticipants(detail.participants);
-        setOutputs(outputsData.outputs);
+        setOutputs(outputsData.outputs as unknown as Outputs);
         setHasOutputs(outputsData.has_outputs);
         setTranscript((transcriptData as any).transcript || []);
       })
@@ -89,7 +89,7 @@ export function MeetingDetail() {
     try {
       await generateApi.all(id);
       const data = await meetingsApi.outputs(id);
-      setOutputs(data.outputs);
+      setOutputs(data.outputs as unknown as Outputs);
       setHasOutputs(data.has_outputs);
       setActiveTab("mom");
     } catch (err: any) {

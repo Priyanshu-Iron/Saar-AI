@@ -1,11 +1,6 @@
-import { Link } from "react-router-dom";
 import Card from "../components/ui/Card";
 import Thread from "../components/ui/Thread";
-
-const primaryLink =
-  "inline-flex items-center justify-center rounded-control bg-violet px-4 py-2 text-small text-white hover:bg-violet/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground";
-const secondaryLink =
-  "inline-flex items-center justify-center rounded-control border border-violet px-4 py-2 text-small text-ink hover:bg-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground";
+import LinkButton from "../components/ui/LinkButton";
 
 const steps = [
   { title: "Send the bot", body: "Paste a meeting link. The bot joins, introduces itself, and records." },
@@ -30,8 +25,8 @@ export function Home() {
             SaarAI sends a bot into your Google Meet, Zoom, or Teams call, transcribes Hindi and English together, and hands back the decisions, owners, and next steps.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <Link to="/signup" className={primaryLink}>Create account</Link>
-            <Link to="/login" className={secondaryLink}>Sign in</Link>
+            <LinkButton to="/signup">Create account</LinkButton>
+            <LinkButton to="/login" variant="secondary">Sign in</LinkButton>
             <span className="ml-1 text-small text-ink-2">Free while in preview</span>
           </div>
         </div>

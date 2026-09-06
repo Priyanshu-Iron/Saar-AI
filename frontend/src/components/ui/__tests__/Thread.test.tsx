@@ -38,6 +38,15 @@ describe("Thread", () => {
     rerender(<Thread state="joined" size="inline" />);
     expect(screen.queryByText("Essence ready")).not.toBeInTheDocument();
   });
+
+  it("renders failed with a danger marker at the recording position and a Failed label", () => {
+    render(<Thread state="failed" size="large" />);
+    expect(document.querySelectorAll('[data-marker="failed"]').length).toBe(1);
+    expect(markers("done")).toBe(1);
+    expect(markers("todo")).toBe(2);
+    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Status: Failed" })).toBeInTheDocument();
+  });
 });
 
 describe("LoadingThread", () => {
