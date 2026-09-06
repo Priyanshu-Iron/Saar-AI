@@ -13,7 +13,7 @@ export function UserMenu({ placement, className = "" }: UserMenuProps) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const emailId = useId();
-  const initial = (user?.email || "?").charAt(0).toUpperCase();
+  const initial = (user?.name || user?.email || "?").charAt(0).toUpperCase();
 
   const panelPlacement = placement === "right" ? "bottom-0 left-full ml-2" : "right-0 top-full mt-2";
 

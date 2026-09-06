@@ -10,6 +10,7 @@ import { authApi, setApiKey, clearApiKey, hasApiKey } from "../api";
 
 type AuthUser = {
   email: string;
+  name?: string;
 };
 
 type AuthContextValue = {
@@ -17,7 +18,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -64,10 +65,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     writeUser({ email });
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, name?: string) => {
     const res = await authApi.register(email, password);
     setApiKey(res.api_key);
-    writeUser({ email });
+    const trimmed = name?.trim();
+    writeUser(trimmed ? { email, name: trimmed } : { email });
   };
 
   const logout = () => {
