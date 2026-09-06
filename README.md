@@ -179,14 +179,34 @@ The name **SaarAI** (सार + AI) carries deep meaning:
 
 ## 🔮 Roadmap
 
-- [x] PostgreSQL integration with Attendee
-- [x] Multi-language transcription (Hindi + English)
-- [x] Web app with light and dark themes, thread-based status, and bilingual identity
-- [ ] Meeting workspace redesign: transcript beside minutes, insights, and strategy
-- [ ] Chat over a meeting, and persisted settings
-- [ ] Real-time webhooks on meeting end
-- [ ] Slack, Notion & email integrations
-- [ ] More languages
+### Shipped
+
+- [x] **Meeting bots on Attendee.** Paste a Google Meet, Zoom, or Teams link and a bot joins, records, and leaves. SaarAI shares Attendee's Postgres, so transcripts and participants are read straight from the source.
+- [x] **Hindi + English transcription** through Deepgram's multi-language mode, with speakers named.
+- [x] **Three AI outputs per meeting**, generated on demand and saved so they load instantly next time:
+  - Minutes of meeting: summary, discussion points, decisions, action items with owners
+  - Insights: participation, themes, sentiment, concerns and blockers
+  - Strategy: priority actions, follow-ups, resource allocation, risk mitigation
+- [x] **Switchable LLM provider.** OpenAI or Google Gemini, chosen by environment variable, through one LangChain config.
+- [x] **Accounts and API keys.** Email and password sign-up, bcrypt hashing, a per-organization API key on every request.
+- [x] **Web app with its own identity.** Light and dark themes, an icon rail with a mobile tab bar, meeting status as a position on a gradient thread, and a bilingual hero.
+
+### Next
+
+- [ ] **Meeting workspace.** Transcript beside minutes, insights, and strategy on one screen, with the thread in the top bar showing where the meeting is right now.
+- [ ] **Chat over a meeting.** Ask questions about a transcript and get answers grounded in what was said.
+- [ ] **Persisted settings.** Profile, organization, and API key management that actually saves.
+- [ ] **Generate automatically when the call ends**, using Attendee webhooks instead of a button.
+- [ ] **Search across meetings** by participant, topic, or decision.
+- [ ] **Failed and paused bot states** shown honestly on the thread, not folded into "unavailable".
+
+### Later
+
+- [ ] Slack, Notion, and email delivery of the essence
+- [ ] Anthropic as a third LLM provider
+- [ ] Export to PDF and Markdown
+- [ ] More Indian languages beyond Hindi
+- [ ] Team roles and shared workspaces
 
 ---
 
