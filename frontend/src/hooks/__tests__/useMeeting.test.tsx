@@ -109,4 +109,21 @@ describe("useMeeting", () => {
     expect(mom).toHaveBeenCalledWith(7);
     expect(result.current.essence.mom.status).toBe("ready");
   });
+
+  it("clears a stale error once a poll succeeds", async () => {
+    vi.spyOn(api.meetingsApi, "detail")
+      .mockRejectedValueOnce(new api.ApiError(503, "Service unavailable"))
+      .mockResolvedValue(meeting(4));
+    vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
+    vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue(jsonOutputs([]));
+    const { result } = renderHook(() => useMeeting(7));
+    await flush();
+    expect(result.current.error).toBe("Service unavailable");
+    expect(result.current.phase).toBe("loading");
+
+    act(() => { result.current.retry(); });
+    await flush();
+    expect(result.current.error).toBeNull();
+    expect(result.current.phase).toBe("live");
+  });
 });

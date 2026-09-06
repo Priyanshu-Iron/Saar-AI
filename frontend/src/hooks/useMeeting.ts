@@ -78,6 +78,7 @@ export function useMeeting(botId: number): MeetingView {
       const res = await meetingsApi.detail(botId);
       setMeeting(res.meeting);
       setParticipants(res.participants);
+      setError(null);
       return res.meeting;
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) setPhase("notfound");
