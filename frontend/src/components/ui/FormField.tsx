@@ -23,7 +23,7 @@ export function FormField({ label, hint, error, className = "", id, ...props }: 
         aria-describedby={error ? errorId : hint ? hintId : undefined}
         className={[
           "w-full rounded-control border bg-raised px-3 py-2 text-body text-ink outline-none transition-colors placeholder:text-ink-2",
-          "focus:border-violet focus:ring-2 focus:ring-violet/25",
+          "focus-visible:outline-none focus-visible:border-violet focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground",
           error ? "border-danger" : "border-line",
           className,
         ].join(" ")}
