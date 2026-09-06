@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Citation from "../Citation";
 import MinutesSection from "../MinutesSection";
 import InsightsSection from "../InsightsSection";
 import StrategySection from "../StrategySection";
 import SectionFrame from "../SectionFrame";
+import SectionNav from "../SectionNav";
 import type { IndexedUtterance } from "../../../hooks/useMeeting";
 
 const utterances: IndexedUtterance[] = [
@@ -109,5 +110,37 @@ describe("SectionFrame", () => {
     expect(screen.getByText("Generated before citations were available.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Regenerate for citations" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Old heading" })).toBeInTheDocument();
+  });
+});
+
+describe("SectionNav", () => {
+  it("closes on Escape, returns focus to the trigger, and disables a regenerating item", async () => {
+    const user = userEvent.setup();
+    render(<SectionNav onRegenerate={() => {}} regenerating={{ mom: true }} />);
+
+    const trigger = screen.getByRole("button", { name: "Regenerate" });
+    await user.click(trigger);
+    expect(screen.getByRole("menuitem", { name: "Regenerate minutes" })).toBeDisabled();
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
+  });
+
+  it("closes when a pointer lands outside the menu", async () => {
+    const user = userEvent.setup();
+    render(<SectionNav onRegenerate={() => {}} regenerating={{}} />);
+
+    await user.click(screen.getByRole("button", { name: "Regenerate" }));
+    expect(screen.getByRole("menuitem", { name: "Regenerate minutes" })).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
+    });
   });
 });
