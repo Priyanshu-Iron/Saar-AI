@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:8001";
+export const API_BASE: string =
+    (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "") ||
+    "http://localhost:8001";
 
 function getApiKey(): string | null {
     return window.localStorage.getItem("saarai_api_key");
