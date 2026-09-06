@@ -15,7 +15,7 @@ from app.services.meeting_fetcher import (
     get_chat_messages,
     verify_bot_access,
 )
-from app.services.outputs_store import get_outputs
+from app.services.outputs_store import get_outputs, get_recent_with_teasers
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,13 @@ def list_meetings(project_id: int = Depends(verify_api_key)):
         "count": len(meetings),
         "meetings": [dict(m) for m in meetings]
     }
+
+# --- Recent finished meetings with a one-line teaser (Dashboard) ---
+@router.get("/recent")
+def recent_meetings(limit: int = 5, project_id: int = Depends(verify_api_key)):
+    limit = max(1, min(limit, 20))
+    meetings = get_recent_with_teasers(project_id, limit)
+    return {"count": len(meetings), "meetings": meetings}
 
 # --- Meeting detail ---
 @router.get("/{bot_id}")
