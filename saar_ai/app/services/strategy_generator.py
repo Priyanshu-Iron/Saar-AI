@@ -1,81 +1,39 @@
 from langchain_core.prompts import ChatPromptTemplate
+
+from app.schemas.essence import Strategy, clamp_refs
 from .llm_config import get_llm
+from .transcript_text import numbered_transcript, participant_line
 
 STRATEGY_PROMPT = ChatPromptTemplate.from_template("""
-You are a strategic advisor and business consultant. Based on the following meeting transcript, provide actionable recommendations and strategic next steps.
+You are a strategy advisor. Turn the meeting below into recommendations the team can act on.
 
-## Meeting Information
-**Participants:** {participants}
+## Participants
+{participants}
 
 ## Transcript
+Each line is numbered. Use the numbers as `refs` on every item: the indices of the lines that support it. Leave `refs` empty only when the recommendation is your inference rather than something said.
+
 {transcript}
 
----
+## What to produce
+- priorities: the three to five most important actions, each with the owner's name from the participant list (or null) and why it matters.
+- followups: what should happen after this meeting.
+- resources: people, budget, or tools the plan needs.
+- risks: each with likelihood and impact as low, medium, or high, and a mitigation.
+- opportunities: openings the discussion revealed.
+- agenda: suggested items for the next meeting.
 
-## Instructions
-Provide strategic recommendations in the following format:
-
-### 🎯 Priority Actions (Do This Week)
-Immediate actions that should be taken within the next 7 days:
-1. **Action**: [Specific task] — **Owner**: [Suggested person] — **Why**: [Brief reason]
-2. ...
-
-### 📅 Follow-up Recommendations
-- Suggested follow-up meetings with proposed agenda
-- Check-ins needed with specific people
-- Milestones to track
-
-### 👥 Resource & Team Recommendations
-- Any additional resources needed
-- Team structure or responsibility suggestions
-- Skills or expertise gaps identified
-
-### ⚠️ Risk Mitigation
-| Risk | Likelihood | Impact | Mitigation Strategy |
-|------|------------|--------|---------------------|
-| Identified risk | High/Medium/Low | High/Medium/Low | How to address it |
-
-### 🚀 Strategic Opportunities
-- Opportunities mentioned or implied in the discussion
-- Quick wins that can be achieved
-- Long-term strategic considerations
-
-### 📋 Suggested Next Meeting Agenda
-If a follow-up is needed, propose a focused agenda:
-1. ...
-2. ...
-3. ...
-
----
-
-Be specific and actionable. Recommendations should be practical and based on the actual discussion content.
+Write in clear, professional English.
 """)
 
 
-def generate_strategy(transcript: str, participants: list) -> str:
-    """
-    Generate strategic recommendations from meeting transcript.
-    
-    Args:
-        transcript: Full meeting transcript with speaker labels
-        participants: List of participant dicts
-    
-    Returns:
-        Formatted strategy recommendations as markdown string
-    """
-    participant_str = ", ".join([
-        f"{p['full_name']}{'(Host)' if p.get('is_host') else ''}" 
-        for p in participants
-    ])
-    
-    llm = get_llm(temperature=0.7)  # Slightly higher for creative recommendations
-    chain = STRATEGY_PROMPT | llm
-    
-    try:
-        response = chain.invoke({
-            "participants": participant_str,
-            "transcript": transcript
-        })
-        return response.content
-    except Exception as e:
-        return f"Error generating strategy: {str(e)}"
+def generate_strategy(utterances: list, participants: list, llm=None) -> Strategy:
+    """Generate structured Strategy with utterance citations."""
+    llm = llm or get_llm(temperature=0.7)
+    structured = llm.with_structured_output(Strategy)
+    messages = STRATEGY_PROMPT.format_messages(
+        participants=participant_line(participants),
+        transcript=numbered_transcript(utterances),
+    )
+    result = structured.invoke(messages)
+    return clamp_refs(result, len(utterances))
