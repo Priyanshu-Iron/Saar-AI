@@ -1,14 +1,26 @@
+import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { renderWithProviders } from "../../../test/render";
 import * as api from "../../../api";
+import { useMeetingContext } from "../../../context/MeetingContext";
 import TopBar from "../TopBar";
 
 function LocationProbe() {
   const location = useLocation();
   return <p data-testid="location">{`${location.pathname}${location.search}`}</p>;
+}
+
+/** Stands in for the meeting workspace, which publishes its name and thread on mount. */
+function PublishMeeting() {
+  const { setCurrent } = useMeetingContext();
+  useEffect(() => {
+    setCurrent({ name: "Q3 vendor review", thread: "recording", label: "Recording" });
+    return () => setCurrent(null);
+  }, [setCurrent]);
+  return null;
 }
 
 describe("TopBar", () => {
@@ -42,5 +54,25 @@ describe("TopBar", () => {
     fireEvent.submit(screen.getByRole("search"));
 
     await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/meetings?q=vendor"));
+  });
+
+  it("names the open meeting and carries its thread once the workspace publishes it", async () => {
+    renderWithProviders(
+      <>
+        <TopBar />
+        <PublishMeeting />
+      </>,
+      { route: "/meetings/7" },
+    );
+
+    expect(await screen.findByText("Meetings / Q3 vendor review")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Status: Recording" })).toBeInTheDocument();
+  });
+
+  it("leaves the thread slot empty when no meeting is open", async () => {
+    renderWithProviders(<TopBar />, { route: "/meetings/7" });
+
+    expect(await screen.findByText("Meetings / Meeting #7")).toBeInTheDocument();
+    expect(document.getElementById("topbar-thread")).toBeEmptyDOMElement();
   });
 });

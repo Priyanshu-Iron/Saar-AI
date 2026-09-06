@@ -1,6 +1,8 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { meetingsApi } from "../../api";
+import Thread from "../ui/Thread";
+import { useMeetingContext } from "../../context/MeetingContext";
 import { breadcrumbFor } from "../../lib/breadcrumb";
 import { isLiveState } from "../../lib/status";
 import ThemeToggle from "./ThemeToggle";
@@ -13,6 +15,7 @@ export function TopBar() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [liveCount, setLiveCount] = useState(0);
+  const { current } = useMeetingContext();
 
   useEffect(() => {
     let cancelled = false;
@@ -40,10 +43,12 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-20 flex h-[52px] items-center gap-4 border-b border-line bg-ground/70 px-4 backdrop-blur-md sm:px-6">
-      <p className="min-w-0 flex-1 truncate text-small text-ink-2 sm:flex-none">{breadcrumbFor(location.pathname)}</p>
+      <p className="min-w-0 flex-1 truncate text-small text-ink-2 sm:flex-none">{breadcrumbFor(location.pathname, current?.name)}</p>
 
       {/* Thread slot: filled by the meeting workspace phase. */}
-      <div id="topbar-thread" className="hidden flex-1 justify-center sm:flex" />
+      <div id="topbar-thread" className="hidden flex-1 justify-center sm:flex">
+        {current ? <Thread state={current.thread} size="card" label={`Status: ${current.label}`} className="max-w-[360px]" /> : null}
+      </div>
 
       <form onSubmit={onSearch} role="search" className="hidden sm:block">
         <label htmlFor="topbar-search" className="sr-only">Search meetings</label>
