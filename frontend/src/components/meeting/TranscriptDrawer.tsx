@@ -27,10 +27,12 @@ export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }
     document.getElementById(`utt-${focusIndex}`)?.scrollIntoView({ block: "center" });
   }, [open, focusIndex]);
 
-  // Move focus to the close button on open.
+  // Move focus to the close button on open, and again if the layout variant
+  // switches (aside <-> dialog) while open, since that remounts the panel
+  // and would otherwise leave focus on <body>.
   useEffect(() => {
     if (open) closeRef.current?.focus();
-  }, [open]);
+  }, [open, isDesktop]);
 
   if (!open) return null;
 

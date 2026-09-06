@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TranscriptDrawer from "../TranscriptDrawer";
 import TranscriptList from "../TranscriptList";
@@ -48,6 +48,24 @@ describe("TranscriptList", () => {
     ];
     rerender(<TranscriptList utterances={grown} follow />);
     expect(scroller.scrollTop).toBe(500);
+  });
+
+  describe("mount with existing content", () => {
+    afterEach(() => {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollHeight;
+    });
+
+    it("scrolls to the bottom on mount when following", () => {
+      Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+        configurable: true,
+        get() {
+          return 500;
+        },
+      });
+      const { container } = render(<TranscriptList utterances={utterances} follow />);
+      const scroller = container.querySelector(".overflow-y-auto") as HTMLDivElement;
+      expect(scroller.scrollTop).toBe(500);
+    });
   });
 });
 
@@ -106,5 +124,33 @@ describe("TranscriptDrawer", () => {
     await user.tab();
     // Tab from the last focusable element wraps around to the first.
     expect(document.activeElement).toBe(closeButton);
+  });
+
+  it("refocuses the close button when the layout variant switches while open", () => {
+    let listener: ((e: MediaQueryListEvent) => void) | undefined;
+    vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn((_event: string, cb: EventListenerOrEventListenerObject) => {
+        listener = cb as (e: MediaQueryListEvent) => void;
+      }),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    expect(screen.getByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
+
+    // Move focus away, then simulate the viewport crossing the breakpoint.
+    (document.activeElement as HTMLElement | null)?.blur();
+    act(() => {
+      listener?.({ matches: false } as MediaQueryListEvent);
+    });
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close transcript" })).toHaveFocus();
   });
 });
