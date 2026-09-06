@@ -2,88 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
+/* ---------- Tokens ----------
+   Core colors are r g b channels so Tailwind can add alpha.
+   Light is the default; [data-theme="dark"] overrides. */
 :root {
   color-scheme: light;
 
-  /* Stripe-inspired palette */
-  --sidebar-bg: #0a2540;
-  --sidebar-hover: #0f3058;
-  --sidebar-active: rgba(99, 91, 255, 0.15);
-  --sidebar-text: #8898aa;
-  --sidebar-text-active: #ffffff;
+  --ground: 238 242 250;   /* #EEF2FA */
+  --surface: 255 255 255;  /* #FFFFFF */
+  --raised: 246 248 253;   /* #F6F8FD */
+  --ink: 22 28 63;         /* #161C3F */
+  --cyan: 2 132 199;       /* #0284C7 */
+  --violet: 109 40 217;    /* #6D28D9 */
+  --gold: 161 98 7;        /* #A16207 */
+  --danger: 200 30 60;     /* #C81E3C */
 
-  --accent: #635bff;
-  --accent-hover: #7a73ff;
-  --accent-light: rgba(99, 91, 255, 0.08);
+  --ink-2: rgba(22, 28, 63, 0.65);
+  --line: rgba(109, 40, 217, 0.22);
+  --grid: rgba(40, 60, 160, 0.16);
+  --mesh-opacity: 0.22;
 
-  --surface: #ffffff;
-  --surface-secondary: #f6f9fc;
-  --surface-hover: #f0f4f8;
-
-  --border: #e3e8ee;
-  --border-light: #f0f3f7;
-
-  --text-primary: #0a2540;
-  --text-secondary: #425466;
-  --text-tertiary: #697386;
-  --text-muted: #8898aa;
-
-  --success: #0caf60;
-  --success-bg: #ecfdf5;
-  --warning: #f5a623;
-  --warning-bg: #fffbeb;
-  --danger: #e25950;
-  --danger-bg: #fef2f2;
+  --thread: linear-gradient(90deg, rgb(var(--cyan)), rgb(var(--violet)), rgb(var(--gold)));
 }
 
-* {
-  box-sizing: border-box;
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ground: 11 15 42;      /* #0B0F2A */
+  --surface: 18 23 58;     /* #12173A */
+  --raised: 26 32 80;      /* #1A2050 */
+  --ink: 233 236 250;      /* #E9ECFA */
+  --cyan: 56 189 248;      /* #38BDF8 */
+  --violet: 139 92 246;    /* #8B5CF6 */
+  --gold: 242 193 78;      /* #F2C14E */
+  --danger: 240 86 107;    /* #F0566B */
+
+  --ink-2: rgba(233, 236, 250, 0.65);
+  --line: rgba(139, 92, 246, 0.28);
+  --grid: rgba(120, 140, 255, 0.22);
+  --mesh-opacity: 0.45;
 }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
-  background: var(--surface-secondary);
-  color: var(--text-primary);
+  font-family: "Anek Devanagari", "Noto Sans Devanagari", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  background: rgb(var(--ground));
+  color: rgb(var(--ink));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Premium scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #d0d5dd;
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #98a2b3;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-
+/* ---------- Type scale ---------- */
 @layer utilities {
-  .stripe-shadow {
-    box-shadow: 0 2px 5px -1px rgba(50, 50, 93, 0.08),
-                0 1px 3px -1px rgba(0, 0, 0, 0.06);
+  .text-display { font-size: 48px; line-height: 1; font-weight: 700; font-stretch: 125%; letter-spacing: -0.02em; }
+  .text-h1 { font-size: 28px; line-height: 1.15; font-weight: 600; font-stretch: 110%; letter-spacing: -0.01em; }
+  .text-h2 { font-size: 22px; line-height: 1.2; font-weight: 600; font-stretch: 110%; }
+  .text-h3 { font-size: 18px; line-height: 1.3; font-weight: 600; font-stretch: 110%; }
+  .text-body { font-size: 15px; line-height: 1.5; font-weight: 400; font-stretch: 100%; }
+  .text-small { font-size: 13px; line-height: 1.4; font-weight: 500; font-stretch: 100%; }
+  @media (max-width: 640px) {
+    .text-display { font-size: 36px; }
   }
-  .stripe-shadow-hover {
-    box-shadow: 0 6px 12px -2px rgba(50, 50, 93, 0.12),
-                0 3px 7px -3px rgba(0, 0, 0, 0.08);
+
+  /* Devanagari and hero words filled with the gradient */
+  .text-thread {
+    background: var(--thread);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
-  .stripe-shadow-lg {
-    box-shadow: 0 13px 27px -5px rgba(50, 50, 93, 0.15),
-                0 8px 16px -8px rgba(0, 0, 0, 0.12);
+
+  /* Dot grid: only ever on the ground, never on a surface */
+  .bg-dotgrid {
+    background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0);
+    background-size: 22px 22px;
   }
+}
+
+/* ---------- Motion ---------- */
+@keyframes thread-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes thread-sweep {
+  0% { left: 0; }
+  50% { left: calc(100% - 10px); }
+  100% { left: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .thread-draw { transform-origin: left; animation: thread-draw 0.6s ease-out both; }
+  .thread-sweep { animation: thread-sweep 1.4s ease-in-out infinite; }
 }
