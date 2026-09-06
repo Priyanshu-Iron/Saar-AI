@@ -19,7 +19,7 @@ type TranscriptListProps = { utterances: IndexedUtterance[]; focusIndex?: number
 export function TranscriptList({ utterances, focusIndex = null, follow = false }: TranscriptListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(true); // true until the user scrolls up
-  const lastCount = useRef(utterances.length);
+  const lastCount = useRef(-1); // forces the first effect run to scroll to the bottom
 
   useEffect(() => {
     const el = containerRef.current;

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { IndexedUtterance } from "../../hooks/useMeeting";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import EmptyState from "../ui/EmptyState";
 import TranscriptList from "./TranscriptList";
 
@@ -18,6 +19,7 @@ export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const headingId = useId();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   // Scroll the cited utterance into view whenever it changes while open.
   useEffect(() => {
@@ -25,7 +27,7 @@ export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }
     document.getElementById(`utt-${focusIndex}`)?.scrollIntoView({ block: "center" });
   }, [open, focusIndex]);
 
-  // Move focus to the close button on open (matters for the mobile dialog).
+  // Move focus to the close button on open.
   useEffect(() => {
     if (open) closeRef.current?.focus();
   }, [open]);
@@ -34,7 +36,9 @@ export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") { event.stopPropagation(); onClose(); return; }
-    if (event.key !== "Tab" || !panelRef.current) return;
+    // The desktop aside is non-modal: it must not trap Tab. Only the mobile
+    // dialog (a true modal) cycles focus within itself.
+    if (isDesktop || event.key !== "Tab" || !panelRef.current) return;
     const focusable = panelRef.current.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])');
     if (focusable.length === 0) return;
     const first = focusable[0];
@@ -73,15 +77,14 @@ export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }
     </div>
   );
 
-  return (
-    <>
-      <aside aria-label="Transcript" className="hidden h-[calc(100vh-52px)] w-[360px] shrink-0 border-l border-line lg:sticky lg:top-[52px] lg:block">
-        {panel}
-      </aside>
-      <div role="dialog" aria-modal="true" aria-labelledby={headingId} className="fixed inset-0 z-40 lg:hidden">
-        {panel}
-      </div>
-    </>
+  return isDesktop ? (
+    <aside aria-label="Transcript" className="h-[calc(100vh-52px)] w-[360px] shrink-0 border-l border-line lg:sticky lg:top-[52px]">
+      {panel}
+    </aside>
+  ) : (
+    <div role="dialog" aria-modal="true" aria-labelledby={headingId} className="fixed inset-0 z-40">
+      {panel}
+    </div>
   );
 }
 export default TranscriptDrawer;

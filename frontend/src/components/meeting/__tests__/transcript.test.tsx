@@ -15,6 +15,19 @@ const utterances: IndexedUtterance[] = [
   { index: 2, speaker: "Meena", timestamp_ms: 9000, duration_ms: 1000, text: "ठीक है, budget needs sign-off" },
 ];
 
+function mockMatchMedia(matches: boolean) {
+  return vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
 describe("TranscriptList", () => {
   it("groups consecutive speaker lines and marks the focused one current", () => {
     render(<TranscriptList utterances={utterances} focusIndex={1} />);
@@ -23,10 +36,21 @@ describe("TranscriptList", () => {
     expect(document.getElementById("utt-0")).not.toHaveAttribute("aria-current");
     expect(screen.getByText("0:09")).toBeInTheDocument();
   });
+
+  it("scrolls to the bottom when following as new lines arrive", () => {
+    const { container, rerender } = render(<TranscriptList utterances={utterances} follow />);
+    const scroller = container.querySelector(".overflow-y-auto") as HTMLDivElement;
+    Object.defineProperty(scroller, "scrollHeight", { value: 500, configurable: true });
+    scroller.scrollTop = 0;
+    const grown: IndexedUtterance[] = [
+      ...utterances,
+      { index: 3, speaker: "Meena", timestamp_ms: 12000, duration_ms: 1000, text: "Let's confirm the date" },
+    ];
+    rerender(<TranscriptList utterances={grown} follow />);
+    expect(scroller.scrollTop).toBe(500);
+  });
 });
 
-// The drawer renders a desktop aside and a mobile dialog; CSS hides one per
-// breakpoint, but jsdom has no CSS, so both are present and queries take [0].
 describe("TranscriptDrawer", () => {
   it("renders nothing when closed", () => {
     const { container } = render(<TranscriptDrawer open={false} onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
@@ -37,15 +61,13 @@ describe("TranscriptDrawer", () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<TranscriptDrawer open onClose={onClose} utterances={utterances} focusIndex={null} live={false} />);
-    expect(screen.getAllByText("3 lines")[0]).toBeInTheDocument();
-    await user.type(screen.getAllByLabelText("Find in transcript")[0], "budget");
-    expect(screen.getAllByText(/budget needs sign-off/)[0]).toBeInTheDocument();
-    // The find box's state is shared by both the desktop and mobile copies,
-    // so typing into one filters both lists.
-    expect(screen.queryAllByText("Delivery slipped again")).toHaveLength(0);
+    expect(screen.getByText("3 lines")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Find in transcript"), "budget");
+    expect(screen.getByText(/budget needs sign-off/)).toBeInTheDocument();
+    expect(screen.queryByText("Delivery slipped again")).not.toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalledTimes(1);
-    await user.click(screen.getAllByRole("button", { name: "Close transcript" })[0]);
+    await user.click(screen.getByRole("button", { name: "Close transcript" }));
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
@@ -59,6 +81,30 @@ describe("TranscriptDrawer", () => {
 
   it("shows the empty word when there is no transcript", () => {
     render(<TranscriptDrawer open onClose={() => {}} utterances={[]} focusIndex={null} live={false} />);
-    expect(screen.getAllByRole("heading", { name: "No transcript yet" })[0]).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No transcript yet" })).toBeInTheDocument();
+  });
+
+  it("renders the desktop aside as a complementary region with no dialog", () => {
+    mockMatchMedia(true);
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    expect(screen.getByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("renders the mobile dialog with no complementary region, and Tab wraps focus", async () => {
+    mockMatchMedia(false);
+    const user = userEvent.setup();
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+
+    const closeButton = screen.getByRole("button", { name: "Close transcript" });
+    const findInput = screen.getByLabelText("Find in transcript");
+    findInput.focus();
+    expect(document.activeElement).toBe(findInput);
+    await user.tab();
+    // Tab from the last focusable element wraps around to the first.
+    expect(document.activeElement).toBe(closeButton);
   });
 });

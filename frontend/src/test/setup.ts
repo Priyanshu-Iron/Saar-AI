@@ -2,12 +2,12 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
-// jsdom has no matchMedia. Default to light; tests override with vi.spyOn.
+// jsdom has no matchMedia. Default to light and desktop-width; tests override with vi.spyOn.
 if (!window.matchMedia) {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
-      matches: false,
+      matches: query === "(min-width: 1024px)",
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
