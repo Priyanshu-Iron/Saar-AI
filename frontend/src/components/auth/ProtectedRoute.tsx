@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import LoadingSpinner from "../ui/LoadingSpinner";
+import LoadingThread from "../ui/LoadingThread";
 import { useAuth } from "../../context/AuthContext";
 
 export function ProtectedRoute() {
@@ -7,7 +7,7 @@ export function ProtectedRoute() {
   const location = useLocation();
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingThread />;
   }
 
   if (!isAuthenticated) {

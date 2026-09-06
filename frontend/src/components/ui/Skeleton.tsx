@@ -1,16 +1,7 @@
-type SkeletonProps = {
-  className?: string;
-};
+type SkeletonProps = { className?: string };
 
 export function Skeleton({ className = "" }: SkeletonProps) {
-  return (
-    <div
-      className={[
-        "animate-pulse rounded-xl bg-slate-200/60",
-        className,
-      ].join(" ")}
-    />
-  );
+  return <div aria-hidden="true" className={["animate-pulse rounded-control bg-raised", className].join(" ")} />;
 }
 
 export default Skeleton;

@@ -57,7 +57,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
     <div className="flex h-full flex-col" style={{ background: '#0a2540' }}>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-6">
-        <BrandLogo mode="icon" className="h-8 w-8 rounded-lg" />
+        <BrandLogo mode="mark" className="h-8 w-8 rounded-lg" />
         <span className="text-[15px] font-bold tracking-tight text-white">SaarAI</span>
       </div>
 

@@ -5,7 +5,7 @@ import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 import { useAuth } from "../context/AuthContext";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
+import LoadingThread from "../components/ui/LoadingThread";
 
 export function AppShell() {
   const location = useLocation();
@@ -13,7 +13,7 @@ export function AppShell() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingThread />;
   }
 
   // Authenticated layout: sidebar + topbar + content

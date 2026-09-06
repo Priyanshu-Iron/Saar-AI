@@ -1,12 +1,12 @@
 import { Navigate, Outlet } from "react-router-dom";
-import LoadingSpinner from "../ui/LoadingSpinner";
+import LoadingThread from "../ui/LoadingThread";
 import { useAuth } from "../../context/AuthContext";
 
 export function PublicOnlyRoute() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingThread />;
   }
 
   if (isAuthenticated) {

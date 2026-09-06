@@ -29,7 +29,7 @@ export function Navbar() {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <BrandLogo mode="icon" className="h-9 w-9 rounded-lg" />
+          <BrandLogo mode="mark" className="h-9 w-9 rounded-lg" />
           <span className="text-sm font-bold tracking-wide text-slate-800">SaarAI</span>
         </div>
         <nav className="flex items-center gap-1 overflow-x-auto">
