@@ -24,3 +24,15 @@ afterEach(() => {
   window.localStorage.clear();
   document.documentElement.removeAttribute("data-theme");
 });
+
+// @testing-library/dom's `waitFor` only auto-advances fake timers when it detects a
+// jest-shaped global (see `jestFakeTimersAreEnabled` in @testing-library/dom). Vitest's
+// `vi.useFakeTimers()` doesn't define that global, so without this shim any `waitFor`
+// used while fake timers are active hangs until the real per-test timeout fires, even
+// once the awaited condition is already true. This is a no-op except when a test has
+// fake timers active.
+if (typeof (globalThis as unknown as { jest?: unknown }).jest === "undefined") {
+  (globalThis as unknown as { jest: { advanceTimersByTime: (ms: number) => unknown } }).jest = {
+    advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms),
+  };
+}
