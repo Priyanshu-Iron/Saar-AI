@@ -68,7 +68,7 @@ export function Signup() {
         </Button>
         <p className="text-small text-ink-2">
           Already have an account?{" "}
-          <Link to="/login" className="text-violet hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet">
+          <Link to="/login" className="text-violet hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
             Sign in
           </Link>
         </p>

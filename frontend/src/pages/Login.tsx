@@ -81,7 +81,7 @@ export function Login() {
         </Button>
         <p className="text-small text-ink-2">
           New to SaarAI?{" "}
-          <Link to="/signup" className="text-violet hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet">
+          <Link to="/signup" className="text-violet hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
             Create an account
           </Link>
         </p>
