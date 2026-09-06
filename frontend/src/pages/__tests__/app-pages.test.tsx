@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { useNavigate } from "react-router-dom";
 import { renderWithProviders } from "../../test/render";
 import * as api from "../../api";
 import Dashboard from "../Dashboard";
@@ -15,6 +17,15 @@ beforeEach(() => {
   vi.spyOn(api.meetingsApi, "botsStatus").mockResolvedValue({ count: 1, bots: [meeting] });
 });
 
+function NavigateTo({ to }: { to: string }) {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate(to)}>
+      go
+    </button>
+  );
+}
+
 describe("app pages under the new identity", () => {
   it("Meetings renders status as a thread, not a pill", async () => {
     renderWithProviders(<Meetings />, { route: "/meetings" });
@@ -26,6 +37,23 @@ describe("app pages under the new identity", () => {
   it("Meetings reads the initial search from the URL", async () => {
     renderWithProviders(<Meetings />, { route: "/meetings?q=vendor" });
     await waitFor(() => expect(screen.getByDisplayValue("vendor")).toBeInTheDocument());
+  });
+
+  it("Meetings picks up a new ?q= while it is already mounted", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <Meetings />
+        <NavigateTo to="/meetings?q=vendor" />
+      </>,
+      { route: "/meetings" },
+    );
+    const input = screen.getByPlaceholderText("Search meetings…");
+    await waitFor(() => expect(input).toHaveValue(""));
+
+    await user.click(screen.getByRole("button", { name: "go" }));
+
+    await waitFor(() => expect(screen.getByPlaceholderText("Search meetings…")).toHaveValue("vendor"));
   });
 
   it("Dashboard renders live bots on a thread", async () => {

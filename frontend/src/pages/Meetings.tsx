@@ -32,6 +32,12 @@ export function Meetings() {
     meetingsApi.list().then((data) => setMeetings(data.meetings)).catch(() => { }).finally(() => setLoading(false));
   }, []);
 
+  // The top bar navigates to /meetings?q=… while this page is already mounted,
+  // so the query has to be read on every searchParams change, not just on mount.
+  useEffect(() => {
+    setSearch(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));

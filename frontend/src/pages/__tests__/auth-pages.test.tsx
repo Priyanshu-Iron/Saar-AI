@@ -5,11 +5,12 @@ import { renderWithProviders } from "../../test/render";
 import Login from "../Login";
 import Signup from "../Signup";
 import NotFound from "../NotFound";
+import { ApiError } from "../../api";
 import * as api from "../../api";
 
 describe("Login", () => {
   it("shows the credential error copy when login fails", async () => {
-    vi.spyOn(api.authApi, "login").mockRejectedValueOnce(new Error("Invalid credentials"));
+    vi.spyOn(api.authApi, "login").mockRejectedValueOnce(new ApiError(401, "Invalid credentials"));
     const user = userEvent.setup();
     renderWithProviders(<Login />, { route: "/login" });
     await user.type(screen.getByLabelText("Work email"), "a@b.com");
@@ -29,6 +30,19 @@ describe("Login", () => {
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent("Couldn't reach SaarAI. Check your connection and try again."),
+    );
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("shows a server error with a retry when the API fails for another reason", async () => {
+    vi.spyOn(api.authApi, "login").mockRejectedValueOnce(new ApiError(503, "Service Unavailable"));
+    const user = userEvent.setup();
+    renderWithProviders(<Login />, { route: "/login" });
+    await user.type(screen.getByLabelText("Work email"), "a@b.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("SaarAI had a problem signing you in. Try again."),
     );
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });

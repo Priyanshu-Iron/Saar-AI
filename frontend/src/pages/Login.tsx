@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ApiError } from "../api";
 import BrandLogo from "../components/ui/BrandLogo";
 import Button from "../components/ui/Button";
 import ErrorNotice from "../components/ui/ErrorNotice";
@@ -8,9 +9,16 @@ import { useAuth } from "../context/AuthContext";
 
 export const NETWORK_ERROR = "Couldn't reach SaarAI. Check your connection and try again.";
 export const CREDENTIAL_ERROR = "That password doesn't match this email. Try again.";
+export const LOGIN_SERVER_ERROR = "SaarAI had a problem signing you in. Try again.";
 
+/** 400/401/403 are the statuses the API uses for a bad email or password. */
+export function isCredentialError(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 400 || err.status === 401 || err.status === 403);
+}
+
+/** Anything that never reached a response (fetch throws a TypeError) is connectivity. */
 export function isNetworkError(err: unknown): boolean {
-  return err instanceof TypeError;
+  return !(err instanceof ApiError);
 }
 
 export function BrandPanel({ title, body }: { title: string; body: string }) {
@@ -57,7 +65,13 @@ export function Login() {
       const target = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/dashboard";
       navigate(target, { replace: true });
     } catch (err) {
-      setError(isNetworkError(err) ? { message: NETWORK_ERROR, retry: true } : { message: CREDENTIAL_ERROR, retry: false });
+      if (isCredentialError(err)) {
+        setError({ message: CREDENTIAL_ERROR, retry: false });
+      } else if (err instanceof ApiError) {
+        setError({ message: LOGIN_SERVER_ERROR, retry: true });
+      } else {
+        setError({ message: NETWORK_ERROR, retry: true });
+      }
     } finally {
       setLoading(false);
     }

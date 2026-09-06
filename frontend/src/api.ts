@@ -18,6 +18,16 @@ export function hasApiKey(): boolean {
     return Boolean(getApiKey());
 }
 
+export class ApiError extends Error {
+    status: number;
+
+    constructor(status: number, message: string) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+    }
+}
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const apiKey = getApiKey();
     const headers: Record<string, string> = {
@@ -40,7 +50,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         } else if (body.message) {
             message = body.message;
         }
-        throw new Error(message);
+        throw new ApiError(res.status, message);
     }
     return res.json();
 }
