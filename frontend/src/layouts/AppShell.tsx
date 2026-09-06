@@ -19,7 +19,7 @@ export function AppShell() {
       <MeetingProvider>
         <div className="flex h-screen overflow-hidden bg-ground bg-dotgrid">
           <Rail />
-          <div className="relative flex flex-1 flex-col overflow-hidden">
+          <div className="relative flex flex-1 flex-col overflow-clip">
             <TopBar />
             <main className="relative z-10 flex-1 overflow-y-auto px-4 pb-20 pt-6 sm:px-8 sm:py-8 md:pb-8">
               <div className="mx-auto max-w-canvas">

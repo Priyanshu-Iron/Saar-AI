@@ -41,7 +41,7 @@ export function SectionNav({ onRegenerate, regenerating }: SectionNavProps) {
   };
 
   return (
-    <nav aria-label="Essence sections" className="sticky top-[52px] z-10 -mx-2 mb-2 flex items-center gap-1 border-b border-line bg-ground/80 px-2 py-2 backdrop-blur-md">
+    <nav aria-label="Essence sections" className="sticky top-0 z-10 -mx-2 mb-2 flex items-center gap-1 border-b border-line bg-ground/80 px-2 py-2 backdrop-blur-md">
       {keys.map((key) => (
         <a key={key} href={`#${key}`} className={link}>{SECTION_TITLES[key]}</a>
       ))}
