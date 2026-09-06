@@ -3,7 +3,7 @@ token.txt
 .idea
 .idea/
 
-test_generators.py
+saar_ai/test_generators.py
 # Logs
 logs
 *.log
