@@ -86,6 +86,26 @@ describe("app pages under the new identity", () => {
     expect(screen.getByRole("img", { name: "Status: Joining" })).toBeInTheDocument();
   });
 
+  it("Meetings rows link to the workspace and live meetings sort first", async () => {
+    vi.spyOn(api.meetingsApi, "list").mockResolvedValue({ count: 2, meetings: [
+      { ...meeting, id: 1, name: "Old finished", state: 9, created_at: "2026-09-05T10:00:00Z" },
+      { ...meeting, id: 2, name: "Happening now", state: 4, created_at: "2026-09-01T10:00:00Z" },
+    ] });
+    renderWithProviders(<Meetings />, { route: "/meetings" });
+    const links = await screen.findAllByRole("link", { name: /Old finished|Happening now/ });
+    expect(links[0]).toHaveAttribute("href", "/meetings/2");
+    expect(links[1]).toHaveAttribute("href", "/meetings/1");
+    expect(screen.queryByRole("link", { name: "Details" })).not.toBeInTheDocument();
+  });
+
+  it("Meetings shows an error with retry when the list fails", async () => {
+    vi.spyOn(api.meetingsApi, "list").mockRejectedValueOnce(new api.ApiError(503, "Service unavailable")).mockResolvedValue({ count: 0, meetings: [] });
+    renderWithProviders(<Meetings />, { route: "/meetings" });
+    expect(await screen.findByRole("alert")).toHaveTextContent("Service unavailable");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("heading", { name: "No meetings yet" })).toBeInTheDocument();
+  });
+
   it("Settings exposes the theme toggle", () => {
     renderWithProviders(<Settings />, { route: "/settings" });
     expect(screen.getByRole("button", { name: /Switch to (dark|light) theme/ })).toBeInTheDocument();
