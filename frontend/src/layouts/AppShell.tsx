@@ -1,63 +1,41 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import CornerMesh from "../components/layout/CornerMesh";
 import Navbar from "../components/layout/Navbar";
-import Sidebar from "../components/layout/Sidebar";
+import Rail from "../components/layout/Rail";
 import TopBar from "../components/layout/TopBar";
-import { useAuth } from "../context/AuthContext";
 import LoadingThread from "../components/ui/LoadingThread";
+import { useAuth } from "../context/AuthContext";
 
 export function AppShell() {
-  const location = useLocation();
   const { isAuthenticated, isLoading } = useAuth();
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   if (isLoading) {
     return <LoadingThread />;
   }
 
-  // Authenticated layout: sidebar + topbar + content
   if (isAuthenticated) {
     return (
-      <div className="flex h-screen overflow-hidden bg-[#f6f9fc]">
-        <Sidebar
-          isOpen={mobileSidebarOpen}
-          onClose={() => setMobileSidebarOpen(false)}
-        />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TopBar onMenuToggle={() => setMobileSidebarOpen((prev) => !prev)} />
-          <main className="flex-1 overflow-y-auto p-5 sm:p-8 lg:p-10">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="mx-auto max-w-5xl"
-            >
+      <div className="flex h-screen overflow-hidden bg-ground bg-dotgrid">
+        <Rail />
+        <div className="relative flex flex-1 flex-col overflow-hidden">
+          <TopBar />
+          <main className="relative z-10 flex-1 overflow-y-auto px-4 pb-20 pt-6 sm:px-8 sm:py-8 md:pb-8">
+            <div className="mx-auto max-w-canvas">
               <Outlet />
-            </motion.div>
+            </div>
           </main>
         </div>
+        <CornerMesh />
       </div>
     );
   }
 
-  // Public layout: navbar + content
   return (
-    <div className="min-h-screen bg-[#f6f9fc]">
+    <div className="min-h-screen bg-ground bg-dotgrid">
       <Navbar />
-      <div className="mx-auto max-w-7xl">
-        <main className="w-full p-4 sm:p-6 lg:p-8">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Outlet />
-          </motion.div>
-        </main>
-      </div>
+      <main className="relative z-10">
+        <Outlet />
+      </main>
     </div>
   );
 }
