@@ -11,7 +11,7 @@ type EmptyStateProps = {
 export function EmptyState({ devanagari, title, body, action, className = "" }: EmptyStateProps) {
   return (
     <div className={["flex flex-col items-start gap-3 py-10", className].join(" ")}>
-      <span lang="hi" className="text-display text-thread" style={{ fontStretch: "100%" }} aria-hidden="true">
+      <span lang="hi" className="text-display text-thread" style={{ fontStretch: "100%", fontWeight: 500 }} aria-hidden="true">
         {devanagari}
       </span>
       <h2 className="text-h2">{title}</h2>

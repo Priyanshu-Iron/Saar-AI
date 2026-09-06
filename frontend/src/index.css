@@ -78,7 +78,14 @@ body {
   }
 
   /* Devanagari and hero words filled with the gradient */
+  /* background-clip: text only paints inside the box's background area, and
+     Anek Devanagari's ascender does not cover matras such as the hook on ी,
+     so gradient text needs padding (offset by negative margin) or the hook
+     disappears and खाली reads as खाला. */
   .text-thread {
+    display: inline-block;
+    padding: 0.35em 0.06em 0.12em;
+    margin: -0.35em -0.06em -0.12em;
     background: var(--thread);
     -webkit-background-clip: text;
     background-clip: text;
