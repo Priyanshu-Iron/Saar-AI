@@ -72,7 +72,7 @@ function NavItem({ item, tooltip }: { item: Item; tooltip: boolean }) {
           {tooltip ? (
             <span
               role="presentation"
-              className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-control border border-line bg-surface px-2 py-1 text-small text-ink opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              className="pointer-events-none absolute left-full z-30 ml-2 whitespace-nowrap rounded-control border border-line bg-surface px-2 py-1 text-small text-ink opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
             >
               {item.label}
             </span>
@@ -87,7 +87,7 @@ export function Rail() {
   return (
     <>
       {/* Desktop rail */}
-      <aside className="hidden h-screen w-14 shrink-0 flex-col items-center border-r border-line bg-surface py-3 md:flex">
+      <aside className="relative z-20 hidden h-screen w-14 shrink-0 flex-col items-center border-r border-line bg-surface py-3 md:flex">
         <div className="mb-4">
           <BrandLogo mode="mark" className="h-7 w-7" />
         </div>
