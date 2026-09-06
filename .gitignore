@@ -285,3 +285,8 @@ pip-selfcheck.json
 
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node,pydev,Python,dotenv,direnv,VirtualEnv,js,npm
+# brainstorming mockups
+.superpowers/
+
+# frontend source dir, not a Python venv lib
+!frontend/src/lib/

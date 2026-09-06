@@ -1,36 +1,40 @@
-import { type InputHTMLAttributes, useState } from "react";
+import { type InputHTMLAttributes, useId } from "react";
 
 type FormFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   hint?: string;
+  error?: string;
 };
 
-export function FormField({ label, hint, className = "", ...props }: FormFieldProps) {
-  const [focused, setFocused] = useState(false);
+export function FormField({ label, hint, error, className = "", id, ...props }: FormFieldProps) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
 
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[13px] font-medium text-[#425466]">{label}</span>
+    <div>
+      <label htmlFor={inputId} className="mb-1.5 block text-small text-ink-2">
+        {label}
+      </label>
       <input
-        onFocus={(event) => {
-          setFocused(true);
-          props.onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          props.onBlur?.(event);
-        }}
+        id={inputId}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? errorId : hint ? hintId : undefined}
         className={[
-          "w-full rounded-md border bg-white px-3 py-2 text-sm text-[#0a2540] outline-none transition-all duration-150 placeholder:text-[#8898aa]",
-          focused
-            ? "border-[#635bff] ring-2 ring-[#635bff]/20"
-            : "border-[#e3e8ee] hover:border-[#c4cdd5] shadow-[0_1px_2px_rgba(50,50,93,0.06)]",
+          "w-full rounded-control border bg-raised px-3 py-2 text-body text-ink outline-none transition-colors placeholder:text-ink-2",
+          "focus-visible:outline-none focus-visible:border-violet focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground",
+          error ? "border-danger" : "border-line",
           className,
         ].join(" ")}
         {...props}
       />
-      {hint ? <span className="mt-1.5 block text-xs text-[#697386]">{hint}</span> : null}
-    </label>
+      {error ? (
+        <span id={errorId} className="mt-1.5 block text-small text-danger">{error}</span>
+      ) : hint ? (
+        <span id={hintId} className="mt-1.5 block text-small text-ink-2">{hint}</span>
+      ) : null}
+    </div>
   );
 }
 

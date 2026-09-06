@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:8001";
+export const API_BASE: string =
+    (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "") ||
+    "http://localhost:8001";
 
 function getApiKey(): string | null {
     return window.localStorage.getItem("saarai_api_key");
@@ -14,6 +16,16 @@ export function clearApiKey() {
 
 export function hasApiKey(): boolean {
     return Boolean(getApiKey());
+}
+
+export class ApiError extends Error {
+    status: number;
+
+    constructor(status: number, message: string) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+    }
 }
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -38,7 +50,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         } else if (body.message) {
             message = body.message;
         }
-        throw new Error(message);
+        throw new ApiError(res.status, message);
     }
     return res.json();
 }

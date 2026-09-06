@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
 import Button from "../components/ui/Button";
-import PageHeader from "../components/ui/PageHeader";
 
 type Message = {
   id: number;
@@ -66,21 +64,18 @@ export function Chat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-0 overflow-hidden rounded-2xl border border-white/60 bg-white/70 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.08)]">
+    <div className="flex h-[calc(100vh-8rem)] gap-0 overflow-hidden rounded-panel border border-line bg-surface">
       {/* Main Chat Area */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Chat Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-xs font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet text-small text-white">
               AI
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-800">SaarAI Assistant</p>
-              <p className="text-[10px] text-emerald-600 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Online
-              </p>
+              <p className="text-body text-ink">SaarAI assistant</p>
+              <p className="text-small text-cyan">Online</p>
             </div>
           </div>
         </div>
@@ -88,49 +83,43 @@ export function Chat() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-4">
           {messages.map((msg) => (
-            <motion.div
+            <div
               key={msg.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div className={`flex items-end gap-2 max-w-[75%] ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 {msg.role === "ai" && (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-[10px] font-bold text-white mb-1">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet text-small text-white mb-1">
                     AI
                   </div>
                 )}
                 <div className={[
-                  "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                  "rounded-panel px-4 py-3 text-body leading-relaxed whitespace-pre-wrap",
                   msg.role === "user"
-                    ? "bg-primary-600 text-white rounded-br-md"
-                    : "bg-slate-100 text-slate-700 rounded-bl-md",
+                    ? "bg-violet text-white rounded-br-control"
+                    : "bg-raised text-ink rounded-bl-control",
                 ].join(" ")}>
                   {msg.content}
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
 
           {isTyping && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-[10px] font-bold text-white">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet text-small text-white">
                 AI
               </div>
-              <div className="rounded-2xl bg-slate-100 px-4 py-3">
-                <div className="flex gap-1">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
-                </div>
+              <div className="rounded-panel bg-raised px-4 py-3 text-body text-ink-2">
+                Thinking…
               </div>
-            </motion.div>
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
-        <div className="border-t border-slate-100 p-4 sm:px-6">
+        <div className="border-t border-line p-4 sm:px-6">
           <div className="flex items-end gap-3">
             <div className="flex-1 relative">
               <textarea
@@ -139,17 +128,15 @@ export function Chat() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about your meetings…"
-                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(13,89,242,0.1)]"
+                className="w-full resize-none rounded-control border border-line bg-surface px-4 py-3 pr-12 text-body text-ink outline-none transition-colors placeholder:text-ink-2 focus-visible:outline-none focus-visible:border-violet focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
                 style={{ maxHeight: "120px" }}
               />
             </div>
             <Button onClick={handleSend} disabled={!input.trim() || isTyping} className="shrink-0">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-              </svg>
+              Send
             </Button>
           </div>
-          <p className="mt-2 text-[10px] text-slate-400 text-center">Press Enter to send · Shift+Enter for new line</p>
+          <p className="mt-2 text-small text-ink-2 text-center">Press Enter to send. Shift+Enter for a new line.</p>
         </div>
       </div>
     </div>

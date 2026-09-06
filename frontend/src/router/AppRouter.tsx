@@ -42,6 +42,6 @@ export const appRouter = createBrowserRouter([
       { path: "*", element: <NotFound /> },
     ],
   },
-]);
+], { future: { v7_relativeSplatPath: true } });
 
 export default appRouter;

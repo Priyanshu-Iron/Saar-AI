@@ -1,31 +1,28 @@
-import { motion } from "framer-motion";
 import { type ReactNode } from "react";
 
 type CardProps = {
   title?: string;
   subtitle?: string;
+  footer?: ReactNode;
   children: ReactNode;
   className?: string;
   noPadding?: boolean;
 };
 
-export function Card({ title, subtitle, children, className = "", noPadding = false }: CardProps) {
+export function Card({ title, subtitle, footer, children, className = "", noPadding = false }: CardProps) {
+  const hasHeader = Boolean(title || subtitle);
   return (
-    <section
-      className={[
-        "rounded-lg border border-[#e3e8ee] bg-white transition-shadow duration-200 hover:shadow-[0_6px_12px_-2px_rgba(50,50,93,0.1),0_3px_7px_-3px_rgba(0,0,0,0.06)]",
-        noPadding ? "" : "p-6",
-        className,
-      ].join(" ")}
-      style={{ boxShadow: '0 2px 5px -1px rgba(50,50,93,0.08), 0 1px 3px -1px rgba(0,0,0,0.06)' }}
-    >
-      {(title || subtitle) && (
-        <header className={noPadding ? "px-6 pt-6 mb-4" : "mb-4"}>
-          {title ? <h3 className="text-sm font-semibold text-[#0a2540]">{title}</h3> : null}
-          {subtitle ? <p className="mt-1 text-xs text-[#697386]">{subtitle}</p> : null}
+    <section className={["rounded-panel border border-line bg-surface", noPadding ? "" : "p-6", className].join(" ")}>
+      {hasHeader ? (
+        <header className={noPadding ? "px-6 pt-6 pb-4" : "mb-4"}>
+          {title ? <h3 className="text-h3">{title}</h3> : null}
+          {subtitle ? <p className="mt-1 text-small text-ink-2">{subtitle}</p> : null}
         </header>
-      )}
+      ) : null}
       {children}
+      {footer ? (
+        <footer className={["border-t border-line", noPadding ? "px-6 py-4" : "mt-4 pt-4"].join(" ")}>{footer}</footer>
+      ) : null}
     </section>
   );
 }
