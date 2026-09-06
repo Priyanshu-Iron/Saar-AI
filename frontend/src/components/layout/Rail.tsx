@@ -1,8 +1,8 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import BrandLogo from "../ui/BrandLogo";
 import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
 
 type Item = { to: string; label: string; icon: ReactNode };
 
@@ -83,40 +83,6 @@ function NavItem({ item, tooltip }: { item: Item; tooltip: boolean }) {
   );
 }
 
-function UserMenu() {
-  const { user, logout } = useAuth();
-  const [open, setOpen] = useState(false);
-  const initial = (user?.email || "?").charAt(0).toUpperCase();
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="Account menu"
-        className={["flex h-8 w-8 items-center justify-center rounded-full bg-violet text-small text-white", focusRing].join(" ")}
-      >
-        {initial}
-      </button>
-      {open ? (
-        <div role="menu" className="absolute bottom-0 left-full ml-2 w-56 rounded-panel border border-line bg-surface p-2">
-          <p className="truncate px-2 py-1 text-small text-ink-2">{user?.email}</p>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={logout}
-            className={["mt-1 w-full rounded-control px-2 py-1.5 text-left text-small text-ink hover:bg-raised", focusRing].join(" ")}
-          >
-            Sign out
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export function Rail() {
   return (
     <>
@@ -132,7 +98,7 @@ export function Rail() {
         </nav>
         <div className="mt-auto flex flex-col items-center gap-3">
           <ThemeToggle />
-          <UserMenu />
+          <UserMenu placement="right" />
         </div>
       </aside>
 

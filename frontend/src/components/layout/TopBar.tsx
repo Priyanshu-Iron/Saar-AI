@@ -4,6 +4,7 @@ import { meetingsApi } from "../../api";
 import { breadcrumbFor } from "../../lib/breadcrumb";
 import { isLiveState } from "../../lib/status";
 import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
 
 const LIVE_POLL_MS = 30_000;
 
@@ -52,7 +53,7 @@ export function TopBar() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search meetings"
-          className="h-8 w-48 rounded-control border border-line bg-raised px-3 text-small text-ink outline-none placeholder:text-ink-2 focus:border-violet focus:ring-2 focus:ring-violet/25"
+          className="h-8 w-48 rounded-control border border-line bg-raised px-3 text-small text-ink placeholder:text-ink-2 focus-visible:outline-none focus-visible:border-violet focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground"
         />
       </form>
 
@@ -63,8 +64,9 @@ export function TopBar() {
         </span>
       ) : null}
 
-      {/* Theme toggle appears here only on mobile; the rail carries it on desktop. */}
+      {/* Theme toggle and account menu appear here only on mobile; the rail carries both on desktop. */}
       <ThemeToggle className="md:hidden" />
+      <UserMenu placement="below" className="md:hidden" />
     </header>
   );
 }
