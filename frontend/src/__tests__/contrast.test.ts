@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 // Values copied from index.css. If a token changes there, update it here.
 const themes = {
-  light: { ground: "#EEF2FA", surface: "#FFFFFF", raised: "#F6F8FD", ink: "#161C3F", ink2: "#161C3F", ink2Alpha: 0.65, gold: "#A16207", cyan: "#0284C7", violet: "#6D28D9", danger: "#C81E3C" },
+  light: { ground: "#EEF2FA", surface: "#FFFFFF", raised: "#F6F8FD", ink: "#161C3F", ink2: "#161C3F", ink2Alpha: 0.65, gold: "#A16207", cyan: "#0369A1", violet: "#6D28D9", danger: "#C81E3C" },
   dark: { ground: "#0B0F2A", surface: "#12173A", raised: "#1A2050", ink: "#E9ECFA", ink2: "#E9ECFA", ink2Alpha: 0.65, gold: "#F2C14E", cyan: "#38BDF8", violet: "#8B5CF6", danger: "#F0566B" },
 };
 
@@ -35,10 +35,14 @@ describe.each(Object.entries(themes))("%s theme contrast", (_name, t) => {
   it("secondary ink on surface meets 4.5:1", () => {
     expect(ratio(blend(t.ink2, t.surface, t.ink2Alpha), hex(t.surface))).toBeGreaterThanOrEqual(4.5);
   });
-  it("gold, cyan, and violet text on surface meet 3:1 for 13px medium and larger", () => {
-    for (const fg of [t.gold, t.cyan, t.violet]) {
+  it("gold and violet text on surface meet 3:1 for 13px medium and larger", () => {
+    for (const fg of [t.gold, t.violet]) {
       expect(ratio(hex(fg), hex(t.surface))).toBeGreaterThanOrEqual(3);
     }
+  });
+  // Cyan carries speaker names at 13px, so it is held to full AA body contrast.
+  it("cyan text on surface meets 4.5:1", () => {
+    expect(ratio(hex(t.cyan), hex(t.surface))).toBeGreaterThanOrEqual(4.5);
   });
 });
 

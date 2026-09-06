@@ -45,7 +45,7 @@ CSS custom properties on `:root`, switched by `[data-theme="dark"]` and `[data-t
 | `--raised` | `#1A2050` | `#F6F8FD` | inputs, hover, table header |
 | `--ink` | `#E9ECFA` | `#161C3F` | primary text |
 | `--ink-2` | `rgba(233,236,250,.65)` | `rgba(22,28,63,.65)` | secondary text |
-| `--cyan` | `#38BDF8` | `#0284C7` | speech, transcript, completed steps |
+| `--cyan` | `#38BDF8` | `#0369A1` | speech, transcript, completed steps |
 | `--violet` | `#8B5CF6` | `#6D28D9` | the AI working, active nav, focus ring |
 | `--gold` | `#F2C14E` | `#A16207` | live now, essence, warnings |
 | `--danger` | `#F0566B` | `#C81E3C` | errors only |
