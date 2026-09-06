@@ -25,6 +25,12 @@
 
 ---
 
+<div align="center">
+  <img src="docs/screenshots/home-dark.png" alt="SaarAI home page in dark theme: the headline 'Every meeting, reduced to its सार' beside a demo meeting on its thread" width="900"/>
+</div>
+
+---
+
 ## 🚀 Key Features
 
 | Feature | What You Get |
@@ -57,6 +63,34 @@ The web app follows a single visual identity, "Signal mesh", drawn from the logo
 | **Icon rail + top bar** | A 56px rail on desktop, a bottom tab bar on phones. The top bar carries the breadcrumb, meeting search, and a live-bot count. |
 | **सार, quietly** | Devanagari appears in the hero and in empty states; every label and control is English. |
 | **One typeface** | Anek Devanagari, a variable font that covers Latin and Devanagari in one family. |
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/home-light.png" alt="Home page, light theme"/></td>
+    <td width="50%"><img src="docs/screenshots/dashboard-dark.png" alt="Dashboard, dark theme, with the icon rail and an empty state"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Home, light</sub></td>
+    <td align="center"><sub>Dashboard, dark</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/meetings-light.png" alt="Meetings list, light theme"/></td>
+    <td width="50%"><img src="docs/screenshots/login-dark.png" alt="Sign in page, dark theme, with the mesh brand panel"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Meetings, light</sub></td>
+    <td align="center"><sub>Sign in, dark</sub></td>
+  </tr>
+</table>
+
+<div align="center">
+  <img src="docs/screenshots/mobile-light.png" alt="Home page on a phone, light theme" width="260"/>
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-dark.png" alt="Meetings on a phone, dark theme, with the bottom tab bar" width="260"/>
+  <br/>
+  <sub>On phones the rail becomes a bottom tab bar and the account menu moves to the top bar.</sub>
+</div>
+
 
 ---
 
