@@ -1,50 +1,88 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import Button from "../components/ui/Button";
-import BrandLogo from "../components/ui/BrandLogo";
+import Thread from "../components/ui/Thread";
+
+const primaryLink =
+  "inline-flex items-center justify-center rounded-control bg-violet px-4 py-2 text-small text-white hover:bg-violet/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground";
+const secondaryLink =
+  "inline-flex items-center justify-center rounded-control border border-violet px-4 py-2 text-small text-ink hover:bg-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground";
+
+const steps = [
+  { title: "Send the bot", body: "Paste a meeting link. The bot joins, introduces itself, and records." },
+  { title: "Read both languages", body: "Deepgram transcribes Hindi and English in one stream, with speakers named." },
+  { title: "Get the essence", body: "Minutes, insights, and strategy arrive the moment the call ends." },
+];
 
 export function Home() {
   return (
-    <section className="mx-auto max-w-5xl rounded-3xl border border-white/60 bg-white/70 backdrop-blur-sm p-8 shadow-[0_20px_60px_-35px_rgba(13,89,242,0.35)] sm:p-12">
-      <BrandLogo className="h-20" />
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500"
-      >
-        SaarAI Overview
-      </motion.p>
-      <motion.h1
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="mt-4 text-4xl font-bold text-slate-900"
-      >
-        Turn meetings into decisions, automatically.
-      </motion.h1>
-      <motion.p
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mt-4 max-w-2xl text-slate-600"
-      >
-        Generate minutes, insights, and strategy from your conversations with a clean workflow built for teams.
-      </motion.p>
+    <div className="mx-auto max-w-canvas px-4 sm:px-8">
+      <section className="grid items-center gap-10 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
+        <div>
+          <h1 className="text-display">
+            Every meeting,{" "}
+            <br />
+            reduced to its{" "}
+            <span lang="hi" className="text-thread" style={{ fontStretch: "100%", fontWeight: 600 }}>
+              सार
+            </span>
+          </h1>
+          <p className="mt-5 max-w-prose text-[17px] font-light leading-relaxed text-ink-2">
+            SaarAI sends a bot into your Google Meet, Zoom, or Teams call, transcribes Hindi and English together, and hands back the decisions, owners, and next steps.
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link to="/signup" className={primaryLink}>Create account</Link>
+            <Link to="/login" className={secondaryLink}>Sign in</Link>
+            <span className="ml-1 text-small text-ink-2">Free while in preview</span>
+          </div>
+        </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="mt-8 flex flex-wrap gap-3"
-      >
-        <Link to="/login">
-          <Button>Login</Button>
-        </Link>
-        <Link to="/signup">
-          <Button variant="secondary">Sign Up</Button>
-        </Link>
-      </motion.div>
-    </section>
+        <div className="rounded-panel border border-line bg-surface p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-body">Q3 vendor review</span>
+            <span className="text-small text-ink-2">started 14:02</span>
+          </div>
+          <Thread state="ready" size="large" />
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div>
+              <h2 className="mb-2 text-small text-ink-2">Transcript</h2>
+              <p className="text-small font-normal leading-relaxed text-ink-2">
+                <span className="text-cyan">Ravi</span> हाँ तो Q3 के लिए हम vendor change कर रहे हैं. Meena will handle the RFP by Friday.
+                <br />
+                <span className="text-cyan">Meena</span> ठीक है, but budget still needs Ankit's sign-off.
+              </p>
+            </div>
+            <div>
+              <h2 className="mb-2 text-small text-ink-2">Essence</h2>
+              <ul className="space-y-1.5 text-small font-normal">
+                {[
+                  ["Change vendor for Q3", "decision"],
+                  ["Meena sends RFP by Friday", "action"],
+                  ["Budget waits on Ankit", "blocker"],
+                ].map(([text, kind]) => (
+                  <li key={text} className="flex items-start gap-2">
+                    <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                    <span>
+                      {text} <span className="text-ink-2">{kind}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-20">
+        <div aria-hidden="true" className="mb-6 h-0.5 rounded-full bg-thread" />
+        <div className="grid gap-8 md:grid-cols-3">
+          {steps.map((step) => (
+            <div key={step.title}>
+              <h2 className="text-h3">{step.title}</h2>
+              <p className="mt-1.5 max-w-[32ch] text-body text-ink-2">{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
