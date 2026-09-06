@@ -78,6 +78,14 @@ describe("app pages under the new identity", () => {
     expect(screen.queryByRole("heading", { name: "Live now" })).not.toBeInTheDocument();
   });
 
+  it("Dashboard shows a just-sent bot under Live now while it is joining", async () => {
+    vi.spyOn(api.meetingsApi, "botsStatus").mockResolvedValue({ count: 1, bots: [{ ...meeting, state: 2, name: "Just sent" }] });
+    vi.spyOn(api.meetingsApi, "recent").mockResolvedValue({ count: 0, meetings: [] });
+    renderWithProviders(<Dashboard />, { route: "/dashboard" });
+    expect(await screen.findByRole("heading", { name: "Live now" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Status: Joining" })).toBeInTheDocument();
+  });
+
   it("Settings exposes the theme toggle", () => {
     renderWithProviders(<Settings />, { route: "/settings" });
     expect(screen.getByRole("button", { name: /Switch to (dark|light) theme/ })).toBeInTheDocument();

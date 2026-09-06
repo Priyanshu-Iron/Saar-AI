@@ -37,3 +37,8 @@ export function isLiveState(state: number): boolean {
 export function isFinishedState(state: number): boolean {
   return state === 9 || state === 10;
 }
+
+/** Bot states worth showing as "live now": known codes that are neither finished nor failed. */
+export function isActiveState(state: number): boolean {
+  return state in MAP && !isFinishedState(state) && state !== 7;
+}

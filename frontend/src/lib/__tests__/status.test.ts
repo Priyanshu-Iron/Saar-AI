@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { botStateToThreadState, isFinishedState, isLiveState } from "../status";
+import { botStateToThreadState, isActiveState, isFinishedState, isLiveState } from "../status";
 
 describe("botStateToThreadState", () => {
   it.each([
@@ -27,5 +27,9 @@ describe("helpers", () => {
     expect(isFinishedState(9)).toBe(true);
     expect(isFinishedState(10)).toBe(true);
     expect(isFinishedState(4)).toBe(false);
+  });
+  it("isActiveState covers known states that are neither finished nor failed", () => {
+    for (const s of [1, 2, 3, 4, 8, 11, 12, 13, 16]) expect(isActiveState(s)).toBe(true);
+    for (const s of [7, 9, 10, 42]) expect(isActiveState(s)).toBe(false);
   });
 });

@@ -10,7 +10,7 @@ import LinkButton from "../components/ui/LinkButton";
 import PageHeader from "../components/ui/PageHeader";
 import Skeleton from "../components/ui/Skeleton";
 import { usePolling } from "../hooks/usePolling";
-import { botStateToThreadState, isLiveState } from "../lib/status";
+import { botStateToThreadState, isActiveState } from "../lib/status";
 import { formatDate, formatDuration } from "../lib/time";
 
 const BOTS_MS = 10_000;
@@ -71,7 +71,7 @@ export function Dashboard() {
     }
   };
 
-  const live = bots.filter((b) => isLiveState(b.state));
+  const live = bots.filter((b) => isActiveState(b.state));
 
   return (
     <div className="space-y-8">
