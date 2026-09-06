@@ -22,6 +22,10 @@ def init_saarai_tables():
                     UNIQUE(bot_id, project_id, output_type)
                 )
             """))
+            conn.execute(text("""
+                ALTER TABLE saarai_outputs
+                ADD COLUMN IF NOT EXISTS format VARCHAR(10) NOT NULL DEFAULT 'markdown'
+            """))
             conn.commit()
     except OperationalError as exc:
         host = os.getenv("DB_HOST", "localhost")
