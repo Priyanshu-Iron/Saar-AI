@@ -56,9 +56,26 @@ describe("app pages under the new identity", () => {
     await waitFor(() => expect(screen.getByPlaceholderText("Search meetings…")).toHaveValue("vendor"));
   });
 
-  it("Dashboard renders live bots on a thread", async () => {
+  it("Dashboard shows live bots on threads and recent meetings with teasers", async () => {
+    vi.spyOn(api.meetingsApi, "recent").mockResolvedValue({ count: 2, meetings: [
+      { meeting: { ...meeting, id: 9, name: "Hiring sync", state: 9 }, teaser: "Hire two engineers" },
+      { meeting: { ...meeting, id: 10, name: "Board prep", state: 9 }, teaser: null },
+    ] });
     renderWithProviders(<Dashboard />, { route: "/dashboard" });
-    await waitFor(() => expect(screen.getAllByRole("img", { name: "Status: Recording" }).length).toBeGreaterThan(0));
+    expect(await screen.findByRole("heading", { name: "Live now" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Status: Recording" })).toBeInTheDocument();
+    expect(await screen.findByText("Hire two engineers")).toBeInTheDocument();
+    expect(screen.getByText("Essence pending")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Hiring sync/ })).toHaveAttribute("href", "/meetings/9");
+    expect(screen.queryByText("Total meetings")).not.toBeInTheDocument();
+  });
+
+  it("Dashboard hides Live now when nothing is live", async () => {
+    vi.spyOn(api.meetingsApi, "botsStatus").mockResolvedValue({ count: 0, bots: [] });
+    vi.spyOn(api.meetingsApi, "recent").mockResolvedValue({ count: 0, meetings: [] });
+    renderWithProviders(<Dashboard />, { route: "/dashboard" });
+    expect(await screen.findByRole("heading", { name: "Recent" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Live now" })).not.toBeInTheDocument();
   });
 
   it("Settings exposes the theme toggle", () => {
