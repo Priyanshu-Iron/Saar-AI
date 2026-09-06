@@ -1,9 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "../../test/render";
 import * as api from "../../api";
+import TopBar from "../../components/layout/TopBar";
 import MeetingDetail from "../MeetingDetail";
 
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
@@ -40,6 +41,19 @@ function renderPage(route = "/meetings/7") {
   );
 }
 
+/** The page inside the shell, so the MeetingContext handoff to the top bar is exercised. */
+function renderWithTopBar(route = "/meetings/7") {
+  return renderWithProviders(
+    <>
+      <TopBar />
+      <Routes>
+        <Route path="/meetings/:botId" element={<MeetingDetail />} />
+      </Routes>
+    </>,
+    { route },
+  );
+}
+
 describe("MeetingDetail", () => {
   it("renders the header, thread, and essence for a ready meeting", async () => {
     renderPage();
@@ -68,6 +82,37 @@ describe("MeetingDetail", () => {
     renderPage();
     expect(await screen.findByRole("heading", { name: "Essence arrives when the call ends" })).toBeInTheDocument();
     expect(await screen.findByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
+  });
+
+  it("keeps the drawer closed once the reader closes it during a live meeting", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(detailOf(4, "Live one"));
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close transcript" }));
+
+    expect(screen.queryByRole("complementary", { name: "Transcript" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Show transcript" })).toBeInTheDocument();
+
+    // The effect must not reopen it on the re-render that the URL change causes.
+    await waitFor(() => expect(screen.queryByRole("complementary", { name: "Transcript" })).not.toBeInTheDocument());
+  });
+
+  it("shows the waiting state while the recording is being transcribed", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(detailOf(6, "Wrapping up"));
+    renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Essence arrives when the call ends" })).toBeInTheDocument();
+    expect(screen.getByText("The call has ended and the recording is being transcribed.")).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Transcript" })).not.toBeInTheDocument();
+  });
+
+  it("publishes the meeting name and thread to the top bar", async () => {
+    renderWithTopBar();
+
+    expect(await screen.findByText("Meetings / Q3 vendor review")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole("img", { name: "Status: Essence ready" })).toHaveLength(2));
   });
 
   it("shows the failed state", async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { SECTION_KEYS, type Insights, type Minutes, type SectionKey, type Strategy } from "../api";
 import InsightsSection from "../components/meeting/InsightsSection";
@@ -41,10 +41,16 @@ export function MeetingDetail() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  // Live meetings open the drawer by default.
+  // Live meetings open the drawer by default, but only once per meeting: `setDrawer`
+  // changes identity with the query string, so re-running this would reopen the drawer
+  // the instant the reader closes it.
+  const openedFor = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (phase === "live") setDrawer(true);
-  }, [phase, setDrawer]);
+    if (phase === "live" && openedFor.current !== botId) {
+      openedFor.current = botId;
+      setDrawer(true);
+    }
+  }, [phase, botId, setDrawer]);
 
   // Publish name and thread to the top bar; clear on unmount.
   const status = meeting ? botStateToThreadState(meeting.state) : null;
