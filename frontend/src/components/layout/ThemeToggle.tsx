@@ -1,8 +1,14 @@
 import { useTheme } from "../../context/ThemeContext";
 
-type ThemeToggleProps = { className?: string };
+type ThemeToggleProps = { className?: string; ringOffset?: "ground" | "surface" };
 
-export function ThemeToggle({ className = "" }: ThemeToggleProps) {
+// Both class strings are written out in full so Tailwind's scanner keeps them.
+const RING = {
+  ground: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground",
+  surface: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+} as const;
+
+export function ThemeToggle({ className = "", ringOffset = "ground" }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
   const next = theme === "dark" ? "light" : "dark";
 
@@ -14,7 +20,7 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
       title={`Switch to ${next} theme`}
       className={[
         "flex h-10 w-10 items-center justify-center rounded-control text-ink-2 hover:bg-raised hover:text-ink",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-ground",
+        RING[ringOffset],
         className,
       ].join(" ")}
     >

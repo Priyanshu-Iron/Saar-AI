@@ -25,4 +25,39 @@ describe("UserMenu", () => {
     });
     expect(window.localStorage.getItem("saarai_auth_user")).toBeNull();
   });
+
+  it("closes on Escape and returns focus to the trigger", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UserMenu placement="right" />);
+
+    const trigger = await screen.findByRole("button", { name: "Account menu" });
+    await user.click(trigger);
+    expect(await screen.findByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("menuitem", { name: "Sign out" })).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
+  });
+
+  it("closes when a pointer lands outside the menu", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <UserMenu placement="right" />
+        <button type="button">outside</button>
+      </>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Account menu" }));
+    expect(await screen.findByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "outside" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("menuitem", { name: "Sign out" })).not.toBeInTheDocument();
+    });
+  });
 });

@@ -8,6 +8,7 @@ export default defineConfig({
     globals: false,
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // Restores vi.spyOn mocks after each test so spies don't leak across it blocks.
     restoreMocks: true,
   },
 });

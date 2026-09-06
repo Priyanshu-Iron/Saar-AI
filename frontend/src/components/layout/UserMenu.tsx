@@ -1,4 +1,5 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const focusRing =
@@ -13,9 +14,38 @@ export function UserMenu({ placement, className = "" }: UserMenuProps) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const emailId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const { pathname } = useLocation();
   const initial = (user?.name || user?.email || "?").charAt(0).toUpperCase();
 
   const panelPlacement = placement === "right" ? "bottom-0 left-full ml-2" : "right-0 top-full mt-2";
+
+  // A pointer outside the menu or Escape dismisses it; Escape returns focus to the avatar.
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  // Navigating away closes the menu, since the panel outlives the route otherwise.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const onSignOut = () => {
     setOpen(false);
@@ -23,8 +53,9 @@ export function UserMenu({ placement, className = "" }: UserMenuProps) {
   };
 
   return (
-    <div className={["relative", className].filter(Boolean).join(" ")}>
+    <div ref={rootRef} className={["relative", className].filter(Boolean).join(" ")}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"

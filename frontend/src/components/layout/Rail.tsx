@@ -54,7 +54,8 @@ function NavItem({ item, tooltip }: { item: Item; tooltip: boolean }) {
     <NavLink
       to={item.to}
       aria-label={item.label}
-      title={item.label}
+      // The custom tooltip stands in for the native one; keeping both stacks two labels.
+      title={tooltip ? undefined : item.label}
       className={({ isActive }) =>
         [
           "group relative flex h-11 w-11 items-center justify-center rounded-control transition-colors",
@@ -97,7 +98,7 @@ export function Rail() {
           ))}
         </nav>
         <div className="mt-auto flex flex-col items-center gap-3">
-          <ThemeToggle />
+          <ThemeToggle ringOffset="surface" />
           <UserMenu placement="right" />
         </div>
       </aside>
