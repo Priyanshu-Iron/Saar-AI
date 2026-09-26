@@ -63,3 +63,37 @@ def test_account_lifecycle(store, cleanup):
 
     store.disable_api_keys(account["project_id"])
     assert store.lookup_caller(hash_api_key(new_key)) is None
+
+
+def test_deepgram_upsert_and_delete(store, cleanup):
+    import json
+
+    from app.config import fernet
+    from app.db.connection import SessionLocal
+    from app.services import deepgram_sync
+
+    email = f"db-test-{uuid.uuid4().hex[:8]}@example.com"
+    account = store.create_account(email, "not-a-real-hash", "approved")
+    cleanup.append(account["project_id"])
+    pid = account["project_id"]
+
+    deepgram_sync._upsert([pid], deepgram_sync.encrypt_credential("first"))
+    deepgram_sync._upsert([pid], deepgram_sync.encrypt_credential("second"))
+    assert pid in deepgram_sync._approved_project_ids()
+
+    db = SessionLocal()
+    try:
+        rows = db.execute(
+            text("SELECT _encrypted_data FROM bots_credentials WHERE project_id = :p AND credential_type = 1"), {"p": pid}
+        ).all()
+    finally:
+        db.close()
+    assert len(rows) == 1
+    assert json.loads(fernet().decrypt(bytes(rows[0][0]))) == {"api_key": "second"}
+
+    deepgram_sync._delete(pid)
+    db = SessionLocal()
+    try:
+        assert db.execute(text("SELECT 1 FROM bots_credentials WHERE project_id = :p"), {"p": pid}).first() is None
+    finally:
+        db.close()
