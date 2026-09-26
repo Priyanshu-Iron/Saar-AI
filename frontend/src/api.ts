@@ -30,9 +30,11 @@ export class ApiError extends Error {
 
 export type AccountStatus = "pending" | "approved" | "disabled";
 
-/** Fired when the API says the account is pending or disabled; AuthContext listens. */
+/** Fired when the API says the account is pending or disabled, or an API key stops working; AuthContext listens. */
 export const ACCESS_EVENT = "saarai:access";
 const ACCESS_DETAILS = new Set(["account_pending", "account_disabled"]);
+/** 401 on these paths means wrong credentials, not a session that stopped working. */
+const CREDENTIAL_PATHS = new Set(["/auth/login", "/auth/register"]);
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const apiKey = getApiKey();
@@ -58,6 +60,11 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         }
         if (res.status === 403 && ACCESS_DETAILS.has(message)) {
             window.dispatchEvent(new CustomEvent(ACCESS_EVENT, { detail: message }));
+        } else if (res.status === 401 && apiKey && !CREDENTIAL_PATHS.has(path)) {
+            // A disabled user's key (or any other key that stopped working mid-session) gets a
+            // generic 401, not the 403 detail above. Sign the session out so the load-time
+            // /auth/me check isn't the only place that catches it.
+            window.dispatchEvent(new CustomEvent(ACCESS_EVENT, { detail: "session_expired" }));
         }
         throw new ApiError(res.status, message);
     }

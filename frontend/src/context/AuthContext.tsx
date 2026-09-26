@@ -98,7 +98,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const detail = (event as CustomEvent<string>).detail;
       const current = userRef.current;
       if (!current) return;
-      writeUser(detail === "account_disabled" ? null : { ...current, status: "pending" });
+      if (detail === "session_expired" || detail === "account_disabled") {
+        writeUser(null);
+        return;
+      }
+      writeUser({ ...current, status: "pending" });
     };
     window.addEventListener(ACCESS_EVENT, onAccess);
     return () => window.removeEventListener(ACCESS_EVENT, onAccess);

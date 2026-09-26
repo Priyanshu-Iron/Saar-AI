@@ -55,4 +55,31 @@ describe("AuthContext", () => {
     });
     expect(screen.getByTestId("user")).toHaveTextContent("signed out");
   });
+
+  it("signs out when another API call gets 401 with a stored key (disabled user's old key)", async () => {
+    signInAs({ email: "a@example.com" });
+    renderProbe();
+    await screen.findByText("a@example.com|approved|false");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: "Invalid or disabled API key" }),
+    } as Response);
+    await expect(api.meetingsApi.list()).rejects.toThrow();
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("signed out"));
+  });
+
+  it("does not sign out on a 401 from authApi.login (wrong credentials)", async () => {
+    const handler = vi.fn();
+    window.addEventListener(api.ACCESS_EVENT, handler);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: "Invalid credentials" }),
+    } as Response);
+    window.localStorage.setItem("saarai_api_key", "stale-key");
+    await expect(api.authApi.login("a@example.com", "wrong-password")).rejects.toThrow();
+    expect(handler).not.toHaveBeenCalled();
+    window.removeEventListener(api.ACCESS_EVENT, handler);
+  });
 });

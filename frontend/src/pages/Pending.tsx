@@ -36,7 +36,11 @@ export function Pending() {
         title="Waiting for approval"
         subtitle="Your account is created. The admin will approve it soon, then you can send SaarAI to your meetings."
       />
-      {notice ? <p className="text-body text-ink-2">{notice}</p> : null}
+      {notice ? (
+        <p role="status" className="text-body text-ink-2">
+          {notice}
+        </p>
+      ) : null}
       {error ? <ErrorNotice message={error} /> : null}
       <div className="flex gap-3">
         <Button onClick={() => void check()} disabled={checking}>

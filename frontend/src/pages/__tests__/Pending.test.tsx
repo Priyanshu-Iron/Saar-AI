@@ -29,6 +29,13 @@ describe("Pending", () => {
     expect(await screen.findByText("Still waiting. Check again later.")).toBeInTheDocument();
   });
 
+  it("announces the still-waiting notice to assistive tech", async () => {
+    signInAs({ status: "pending" });
+    renderWithProviders(<App />, { route: "/pending" });
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Check again" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Still waiting. Check again later.");
+  });
+
   it("moves to the dashboard once approved", async () => {
     const me = signInAs({ status: "pending" });
     renderWithProviders(<App />, { route: "/pending" });
