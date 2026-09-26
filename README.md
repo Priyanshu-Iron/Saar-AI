@@ -120,14 +120,18 @@ cd saar_ai
 uvicorn app.main:app --reload --port 8001
 ```
 
-`saar_ai/.env` needs:
+Copy `saar_ai/.env.example` to `saar_ai/.env` and fill it in:
 
-| Variable | Purpose |
-|---|---|
-| `DB_HOST`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Attendee's Postgres (defaults are in `attendee/dev.docker-compose.yaml`) |
-| `OPENAI_API_KEY` / `GOOGLE_API_KEY` / `ANTHROPIC_API_KEY` | Whichever LLM provider the generators use |
+| Variable | Required | Purpose |
+|---|---|---|
+| `DB_HOST`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | yes | Attendee's Postgres (defaults are in `attendee/dev.docker-compose.yaml`) |
+| `CREDENTIALS_ENCRYPTION_KEY` | yes | Must equal the value in `attendee/.env`. Encrypts stored keys. |
+| `ADMIN_EMAIL` | yes | The account that signs up with this email is the admin |
+| `ALLOWED_ORIGINS` | no | Comma-separated web origins allowed to call the API (default `http://localhost:5173`) |
+| `ATTENDEE_API_URL` | no | Attendee's API (default `http://localhost:8000`) |
+| `OPENAI_API_KEY`, `GOOGLE_API_KEY` | no | Local-dev fallback. Keys saved on the admin page take precedence. |
 
-If Postgres is not running, the API exits with a one-line message telling you how to start it.
+If a required variable is missing, or Postgres is not running, the API exits with a one-line message saying what to fix.
 
 ### 3. Run the web app
 
@@ -144,6 +148,18 @@ npm test               # Vitest, 75 tests
 npm run typecheck      # tsc -b
 npm run build
 ```
+
+---
+
+### 4. Admin setup
+
+1. Set `ADMIN_EMAIL` in `saar_ai/.env` and restart the API.
+2. Sign up in the web app with that email. On a public deploy, do this before sharing the link: emails are not verified, so whoever registers that address first is the admin.
+3. Open **Admin** in the left rail.
+   - **AI and keys:** choose OpenAI or Gemini, set the model, and paste the LLM key and the Deepgram key. Keys are stored encrypted and never shown again, only their last four characters.
+   - **Users:** new signups wait here. Approve them to let them send bots and generate minutes, insights, and strategy. Disable an account to sign it out and stop its bots from transcribing.
+
+Accounts that existed before approvals were added are approved automatically.
 
 ---
 
