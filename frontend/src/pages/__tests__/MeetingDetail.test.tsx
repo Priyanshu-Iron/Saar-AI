@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router-dom";
 import { renderWithProviders } from "../../test/render";
@@ -70,6 +70,35 @@ describe("MeetingDetail", () => {
     await userEvent.setup().click(cite);
     expect(await screen.findByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
     expect(document.getElementById("utt-1")).toHaveAttribute("aria-current", "true");
+  });
+
+  it("scrolls again when the same citation is clicked twice", async () => {
+    const spy = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
+    const user = userEvent.setup();
+    renderPage();
+    const cite = await screen.findByRole("button", { name: "Show source at 12:04" });
+    spy.mockClear();
+    await user.click(cite);
+    await user.click(cite);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears the citation highlight 1500 ms after the last click", async () => {
+    renderPage();
+    const cite = await screen.findByRole("button", { name: "Show source at 12:04" });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(cite);
+      expect(document.getElementById("utt-1")).toHaveAttribute("aria-current", "true");
+      act(() => { vi.advanceTimersByTime(1000); });
+      fireEvent.click(cite); // a new click restarts the timer
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(document.getElementById("utt-1")).toHaveAttribute("aria-current", "true");
+      act(() => { vi.advanceTimersByTime(500); });
+      expect(document.querySelectorAll("[aria-current]")).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("opens the drawer from the URL", async () => {

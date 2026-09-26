@@ -71,14 +71,14 @@ describe("TranscriptList", () => {
 
 describe("TranscriptDrawer", () => {
   it("renders nothing when closed", () => {
-    const { container } = render(<TranscriptDrawer open={false} onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    const { container } = render(<TranscriptDrawer open={false} onClose={() => {}} utterances={utterances} focus={null} live={false} />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("shows the count, filters by find, and closes on Escape and the button", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    render(<TranscriptDrawer open onClose={onClose} utterances={utterances} focusIndex={null} live={false} />);
+    render(<TranscriptDrawer open onClose={onClose} utterances={utterances} focus={null} live={false} />);
     expect(screen.getByText("3 lines")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Find in transcript"), "budget");
     expect(screen.getByText(/budget needs sign-off/)).toBeInTheDocument();
@@ -92,19 +92,33 @@ describe("TranscriptDrawer", () => {
   it("scrolls the focused utterance into view", () => {
     const spy = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
     spy.mockClear();
-    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={2} live={false} />);
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focus={{ index: 2, nonce: 1 }} live={false} />);
     expect(spy).toHaveBeenCalled();
     expect(document.getElementById("utt-2")).toHaveAttribute("aria-current", "true");
   });
 
+  it("clears the find query and scrolls again on every citation click", async () => {
+    mockMatchMedia(true);
+    const spy = Element.prototype.scrollIntoView as unknown as ReturnType<typeof vi.fn>;
+    const user = userEvent.setup();
+    const { rerender } = render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focus={{ index: 1, nonce: 1 }} live={false} />);
+    await user.type(screen.getByLabelText("Find in transcript"), "budget");
+    expect(document.getElementById("utt-1")).toBeNull();
+    spy.mockClear();
+    rerender(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focus={{ index: 1, nonce: 2 }} live={false} />);
+    expect(screen.getByLabelText("Find in transcript")).toHaveValue("");
+    expect(document.getElementById("utt-1")).toHaveAttribute("aria-current", "true");
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the empty word when there is no transcript", () => {
-    render(<TranscriptDrawer open onClose={() => {}} utterances={[]} focusIndex={null} live={false} />);
+    render(<TranscriptDrawer open onClose={() => {}} utterances={[]} focus={null} live={false} />);
     expect(screen.getByRole("heading", { name: "No transcript yet" })).toBeInTheDocument();
   });
 
   it("renders the desktop aside as a complementary region with no dialog", () => {
     mockMatchMedia(true);
-    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focus={null} live={false} />);
     expect(screen.getByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -112,9 +126,12 @@ describe("TranscriptDrawer", () => {
   it("renders the mobile dialog with no complementary region, and Tab wraps focus", async () => {
     mockMatchMedia(false);
     const user = userEvent.setup();
-    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focus={null} live={false} />);
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    // Portalled to <body> so the top bar and tab bar cannot paint over it.
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog).toHaveClass("z-50", "bg-surface");
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 
     const closeButton = screen.getByRole("button", { name: "Close transcript" });
@@ -140,7 +157,7 @@ describe("TranscriptDrawer", () => {
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
     }));
-    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focusIndex={null} live={false} />);
+    render(<TranscriptDrawer open onClose={() => {}} utterances={utterances} focus={null} live={false} />);
     expect(screen.getByRole("complementary", { name: "Transcript" })).toBeInTheDocument();
 
     // Move focus away, then simulate the viewport crossing the breakpoint.

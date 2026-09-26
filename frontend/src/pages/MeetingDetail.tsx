@@ -24,12 +24,16 @@ const PHASE_BODY: Record<string, string> = {
   processing: "The call has ended and the recording is being transcribed.",
 };
 
+const CITE_HIGHLIGHT_MS = 1500;
+
 export function MeetingDetail() {
   const { botId } = useParams<{ botId: string }>();
   const id = Number(botId);
   const { meeting, participants, utterances, essence, phase, error, regenerate, retry } = useMeeting(id);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [focusIndex, setFocusIndex] = useState<number | null>(null);
+  const [focus, setFocus] = useState<{ index: number; nonce: number } | null>(null);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (focusTimer.current) clearTimeout(focusTimer.current); }, []);
   const { setCurrent } = useMeetingContext();
 
   const drawerOpen = searchParams.get("transcript") === "open";
@@ -62,8 +66,12 @@ export function MeetingDetail() {
     return () => setCurrent(null);
   }, [name, threadState, threadLabel, setCurrent]);
 
+  // Each click gets a fresh nonce so a repeat click scrolls again; the highlight
+  // clears 1500 ms after the last click.
   const onCite = (index: number) => {
-    setFocusIndex(index);
+    setFocus((prev) => ({ index, nonce: (prev?.nonce ?? 0) + 1 }));
+    if (focusTimer.current) clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => { focusTimer.current = null; setFocus(null); }, CITE_HIGHLIGHT_MS);
     setDrawer(true);
   };
 
@@ -120,7 +128,7 @@ export function MeetingDetail() {
         )}
       </div>
 
-      <TranscriptDrawer open={drawerOpen} onClose={() => setDrawer(false)} utterances={utterances} focusIndex={focusIndex} live={phase === "live"} />
+      <TranscriptDrawer open={drawerOpen} onClose={() => setDrawer(false)} utterances={utterances} focus={focus} live={phase === "live"} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import type { IndexedUtterance } from "../../hooks/useMeeting";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import EmptyState from "../ui/EmptyState";
@@ -8,24 +9,38 @@ type TranscriptDrawerProps = {
   open: boolean;
   onClose: () => void;
   utterances: IndexedUtterance[];
-  focusIndex: number | null;
+  /** The cited utterance; `nonce` changes on every citation click, even a repeat. */
+  focus: { index: number; nonce: number } | null;
   live: boolean;
 };
 
 const focusRing = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
-export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }: TranscriptDrawerProps) {
+export function TranscriptDrawer({ open, onClose, utterances, focus, live }: TranscriptDrawerProps) {
   const [query, setQuery] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const headingId = useId();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  // Scroll the cited utterance into view whenever it changes while open.
+  const focusIndex = focus?.index ?? null;
+  const focusNonce = focus?.nonce;
+  const pendingScroll = useRef<number | null>(null);
+
+  // Each citation click clears the find query (so the cited line is not filtered out)
+  // and queues a scroll to it, even when the same citation is clicked again.
   useEffect(() => {
-    if (!open || focusIndex === null) return;
-    document.getElementById(`utt-${focusIndex}`)?.scrollIntoView({ block: "center" });
-  }, [open, focusIndex]);
+    if (focusNonce === undefined || focusIndex === null) return;
+    pendingScroll.current = focusIndex;
+    setQuery("");
+  }, [focusNonce]); // keyed on the nonce only: the index travels with it
+
+  // Run the queued scroll once the drawer is open and the query is empty.
+  useEffect(() => {
+    if (!open || query || pendingScroll.current === null) return;
+    document.getElementById(`utt-${pendingScroll.current}`)?.scrollIntoView({ block: "center" });
+    pendingScroll.current = null;
+  }, [open, query, focusNonce]);
 
   // Move focus to the close button on open, and again if the layout variant
   // switches (aside <-> dialog) while open, since that remounts the panel
@@ -79,14 +94,22 @@ export function TranscriptDrawer({ open, onClose, utterances, focusIndex, live }
     </div>
   );
 
-  return isDesktop ? (
-    <aside aria-label="Transcript" className="h-[calc(100vh-52px)] w-[360px] shrink-0 border-l border-line lg:sticky lg:top-[52px]">
+  if (isDesktop) {
+    // `main` (below the top bar) is the scroll container, so stick to its top and
+    // subtract its vertical padding (py-8) from the height.
+    return (
+      <aside aria-label="Transcript" className="h-[calc(100vh-52px-4rem)] w-[360px] shrink-0 border-l border-line lg:sticky lg:top-0">
+        {panel}
+      </aside>
+    );
+  }
+  // The dialog is portalled to <body>: inside <main> (its own stacking context) the
+  // sticky top bar and the mobile tab bar would paint over it.
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-labelledby={headingId} className="fixed inset-0 z-50 bg-surface">
       {panel}
-    </aside>
-  ) : (
-    <div role="dialog" aria-modal="true" aria-labelledby={headingId} className="fixed inset-0 z-40">
-      {panel}
-    </div>
+    </div>,
+    document.body,
   );
 }
 export default TranscriptDrawer;
