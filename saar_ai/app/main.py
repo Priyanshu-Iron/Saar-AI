@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import allowed_origins, check_config
-from app.routers import auth, meetings, generate
+from app.routers import admin, auth, meetings, generate
 from app.db.init_saarai_tables import init_saarai_tables
 
 app = FastAPI(
@@ -25,6 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(meetings.router)
 app.include_router(generate.router)
