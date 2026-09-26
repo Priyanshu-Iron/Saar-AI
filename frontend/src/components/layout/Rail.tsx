@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import BrandLogo from "../ui/BrandLogo";
+import { useAuth } from "../../context/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 
@@ -46,6 +47,16 @@ const items: Item[] = [
   },
 ];
 
+const adminItem: Item = {
+  to: "/admin",
+  label: "Admin",
+  icon: (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+    </svg>
+  ),
+};
+
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
@@ -85,6 +96,9 @@ function NavItem({ item, tooltip }: { item: Item; tooltip: boolean }) {
 }
 
 export function Rail() {
+  const { user } = useAuth();
+  const navItems = user?.isAdmin ? [...items, adminItem] : items;
+
   return (
     <>
       {/* Desktop rail */}
@@ -93,7 +107,7 @@ export function Rail() {
           <BrandLogo mode="mark" className="h-7 w-7" />
         </div>
         <nav aria-label="Primary" className="flex flex-col gap-1">
-          {items.map((item) => (
+          {navItems.map((item) => (
             <NavItem key={item.to} item={item} tooltip />
           ))}
         </nav>
@@ -108,7 +122,7 @@ export function Rail() {
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-30 flex h-14 items-center justify-around border-t border-line bg-surface md:hidden"
       >
-        {items.map((item) => (
+        {navItems.map((item) => (
           <NavItem key={item.to} item={item} tooltip={false} />
         ))}
       </nav>

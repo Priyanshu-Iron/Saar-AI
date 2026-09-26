@@ -52,6 +52,16 @@ describe("Login", () => {
     expect(screen.queryByText(/google/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/forgot/i)).not.toBeInTheDocument();
   });
+
+  it("shows the disabled-account message from the API", async () => {
+    vi.spyOn(api.authApi, "login").mockRejectedValueOnce(new ApiError(403, "Your account has been disabled."));
+    const user = userEvent.setup();
+    renderWithProviders(<Login />, { route: "/login" });
+    await user.type(screen.getByLabelText("Work email"), "a@b.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Your account has been disabled."));
+  });
 });
 
 describe("Signup", () => {

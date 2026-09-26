@@ -3,7 +3,7 @@ import LoadingThread from "../ui/LoadingThread";
 import { useAuth } from "../../context/AuthContext";
 
 export function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -12,6 +12,10 @@ export function ProtectedRoute() {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (user?.status === "pending" && location.pathname !== "/pending") {
+    return <Navigate to="/pending" replace />;
   }
 
   return <Outlet />;

@@ -65,7 +65,10 @@ export function Login() {
       const target = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/dashboard";
       navigate(target, { replace: true });
     } catch (err) {
-      if (isCredentialError(err)) {
+      if (err instanceof ApiError && err.status === 403) {
+        // A disabled account: the API's message says so; the credential copy would mislead.
+        setError({ message: err.message, retry: false });
+      } else if (isCredentialError(err)) {
         setError({ message: CREDENTIAL_ERROR, retry: false });
       } else if (err instanceof ApiError) {
         setError({ message: LOGIN_SERVER_ERROR, retry: true });

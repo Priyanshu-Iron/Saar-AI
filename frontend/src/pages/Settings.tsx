@@ -9,7 +9,6 @@ import { useAuth } from "../context/AuthContext";
 const tabs = [
   { key: "profile", label: "Profile" },
   { key: "organization", label: "Organization" },
-  { key: "apikeys", label: "API keys" },
 ] as const;
 
 type TabKey = typeof tabs[number]["key"];
@@ -24,7 +23,7 @@ export function Settings() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" subtitle="Manage your profile, organization, and API access." />
+      <PageHeader title="Settings" subtitle="Manage your profile and organization." />
 
       {/* Tab navigation */}
       <div className="flex gap-6 border-b border-line">
@@ -76,26 +75,6 @@ export function Settings() {
             <Button>Update organization</Button>
           </div>
         </Card>
-      )}
-
-      {/* API Keys Tab */}
-      {activeTab === "apikeys" && (
-        <div className="space-y-4">
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-h3 text-ink">API keys</h3>
-                <p className="mt-0.5 text-small text-ink-2">Manage your API keys for authenticating with SaarAI services.</p>
-              </div>
-              <Button>Generate new key</Button>
-            </div>
-
-            <div className="rounded-panel border border-dashed border-line bg-raised p-8 text-center">
-              <p className="text-body text-ink-2">No API keys yet.</p>
-              <p className="mt-1 text-small text-ink-2">Select "Generate new key" to create your first API key.</p>
-            </div>
-          </Card>
-        </div>
       )}
     </div>
   );

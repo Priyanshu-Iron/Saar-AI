@@ -110,4 +110,9 @@ describe("app pages under the new identity", () => {
     renderWithProviders(<Settings />, { route: "/settings" });
     expect(screen.getByRole("button", { name: /Switch to (dark|light) theme/ })).toBeInTheDocument();
   });
+
+  it("Settings has no API keys tab", () => {
+    renderWithProviders(<Settings />, { route: "/settings" });
+    expect(screen.queryByRole("button", { name: "API keys" })).not.toBeInTheDocument();
+  });
 });
