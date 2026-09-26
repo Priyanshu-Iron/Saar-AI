@@ -4,8 +4,7 @@ export function CornerMesh() {
       aria-hidden="true"
       viewBox="0 0 220 220"
       fill="none"
-      className="pointer-events-none fixed -bottom-10 -right-10 z-0 h-80 w-80"
-      style={{ opacity: "var(--mesh-opacity)" }}
+      className="pointer-events-none fixed -bottom-10 -right-10 z-0 h-52 w-52 md:h-80 md:w-80 mesh-opacity"
     >
       <defs>
         <linearGradient id="corner-mesh" x1="0" x2="1">

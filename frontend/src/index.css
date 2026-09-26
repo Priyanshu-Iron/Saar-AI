@@ -97,6 +97,11 @@ body {
     background-image: radial-gradient(circle at 1px 1px, var(--grid) 1px, transparent 0);
     background-size: 22px 22px;
   }
+
+  .mesh-opacity { opacity: var(--mesh-opacity); }
+  @media (max-width: 767px) {
+    .mesh-opacity { opacity: 0.25; }
+  }
 }
 
 /* ---------- Motion ---------- */

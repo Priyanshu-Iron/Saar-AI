@@ -190,10 +190,10 @@ The name **SaarAI** (सार + AI) carries deep meaning:
 - [x] **Switchable LLM provider.** OpenAI or Google Gemini, chosen by environment variable, through one LangChain config.
 - [x] **Accounts and API keys.** Email and password sign-up, bcrypt hashing, a per-organization API key on every request.
 - [x] **Web app with its own identity.** Light and dark themes, an icon rail with a mobile tab bar, meeting status as a position on a gradient thread, and a bilingual hero.
+- [x] **Meeting workspace.** A finished meeting reads as a cited essence document; every decision, action, and risk links back to the transcript line it came from. Live meetings show the transcript as it grows.
 
 ### Next
 
-- [ ] **Meeting workspace.** Transcript beside minutes, insights, and strategy on one screen, with the thread in the top bar showing where the meeting is right now.
 - [ ] **Chat over a meeting.** Ask questions about a transcript and get answers grounded in what was said.
 - [ ] **Persisted settings.** Profile, organization, and API key management that actually saves.
 - [ ] **Generate automatically when the call ends**, using Attendee webhooks instead of a button.
