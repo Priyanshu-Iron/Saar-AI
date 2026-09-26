@@ -56,7 +56,7 @@ describe("Login", () => {
 
 describe("Signup", () => {
   it("stores the name locally after registering", async () => {
-    vi.spyOn(api.authApi, "register").mockResolvedValueOnce({ api_key: "k", message: "ok" });
+    vi.spyOn(api.authApi, "register").mockResolvedValueOnce({ api_key: "k", message: "ok", email: "p@b.com", status: "pending", is_admin: false });
     const user = userEvent.setup();
     renderWithProviders(<Signup />, { route: "/signup" });
     await user.type(screen.getByLabelText("Full name"), "Priya");
@@ -64,7 +64,7 @@ describe("Signup", () => {
     await user.type(screen.getByLabelText("Password"), "password123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
     await waitFor(() =>
-      expect(JSON.parse(window.localStorage.getItem("saarai_auth_user") ?? "{}")).toEqual({ email: "p@b.com", name: "Priya" }),
+      expect(JSON.parse(window.localStorage.getItem("saarai_auth_user") ?? "{}")).toEqual({ email: "p@b.com", name: "Priya", status: "pending", isAdmin: false }),
     );
   });
 

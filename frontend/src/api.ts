@@ -28,6 +28,12 @@ export class ApiError extends Error {
     }
 }
 
+export type AccountStatus = "pending" | "approved" | "disabled";
+
+/** Fired when the API says the account is pending or disabled; AuthContext listens. */
+export const ACCESS_EVENT = "saarai:access";
+const ACCESS_DETAILS = new Set(["account_pending", "account_disabled"]);
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const apiKey = getApiKey();
     const headers: Record<string, string> = {
@@ -50,24 +56,32 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         } else if (body.message) {
             message = body.message;
         }
+        if (res.status === 403 && ACCESS_DETAILS.has(message)) {
+            window.dispatchEvent(new CustomEvent(ACCESS_EVENT, { detail: message }));
+        }
         throw new ApiError(res.status, message);
     }
     return res.json();
 }
 
 /* ---------- Auth ---------- */
+export type AuthResponse = { api_key: string; message: string; email: string; status: AccountStatus; is_admin: boolean };
+export type Me = { email: string; status: AccountStatus; is_admin: boolean };
+
 export const authApi = {
     register: (email: string, password: string) =>
-        apiFetch<{ api_key: string; message: string }>("/auth/register", {
+        apiFetch<AuthResponse>("/auth/register", {
             method: "POST",
             body: JSON.stringify({ email, password }),
         }),
 
     login: (email: string, password: string) =>
-        apiFetch<{ api_key: string; message: string }>("/auth/login", {
+        apiFetch<AuthResponse>("/auth/login", {
             method: "POST",
             body: JSON.stringify({ email, password }),
         }),
+
+    me: () => apiFetch<Me>("/auth/me"),
 };
 
 /* ---------- Meetings ---------- */
@@ -164,4 +178,31 @@ export const generateApi = {
         apiFetch<{ bot_id: number; done: SectionKey[]; failed: Partial<Record<SectionKey, string>> }>(`/generate/all/${botId}`, { method: "POST" }),
     status: (botId: number) =>
         apiFetch<GenerateStatus>(`/generate/status/${botId}`),
+};
+
+/* ---------- Admin ---------- */
+export type AdminUser = {
+    id: number;
+    email: string;
+    status: AccountStatus;
+    joined_at: string;
+    decided_at: string | null;
+    is_admin: boolean;
+};
+export type KeyState = { set: boolean; last4: string | null; updated_at: string | null };
+export type LlmProvider = "openai" | "google";
+export type SecretKey = "openai_api_key" | "google_api_key" | "deepgram_api_key";
+export type AdminSettings = { llm_provider: LlmProvider | null; llm_model: string | null } & Record<SecretKey, KeyState>;
+export type SettingsUpdate = Partial<{ llm_provider: LlmProvider; llm_model: string } & Record<SecretKey, string>>;
+
+export const DEFAULT_MODELS: Record<LlmProvider, string> = { openai: "gpt-4o-mini", google: "gemini-1.5-flash" };
+
+export const adminApi = {
+    users: () => apiFetch<{ users: AdminUser[] }>("/admin/users"),
+    approve: (id: number) => apiFetch<{ id: number; status: AccountStatus }>(`/admin/users/${id}/approve`, { method: "POST" }),
+    disable: (id: number) => apiFetch<{ id: number; status: AccountStatus }>(`/admin/users/${id}/disable`, { method: "POST" }),
+    enable: (id: number) => apiFetch<{ id: number; status: AccountStatus }>(`/admin/users/${id}/enable`, { method: "POST" }),
+    settings: () => apiFetch<AdminSettings>("/admin/settings"),
+    saveSettings: (body: SettingsUpdate) =>
+        apiFetch<AdminSettings>("/admin/settings", { method: "PUT", body: JSON.stringify(body) }),
 };
