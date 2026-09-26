@@ -1,13 +1,18 @@
 import json
 import logging
 import os
+import time
 from datetime import datetime
+from typing import Callable
 
 import jwt
+from django.conf import settings
 
 from bots.meeting_url_utils import parse_zoom_join_url
+from bots.models import RecordingViews
+from bots.utils import select_from_comma_separated_list_with_wrapping_index
 from bots.web_bot_adapter import WebBotAdapter
-from bots.zoom_web_bot_adapter.zoom_web_ui_methods import ZoomWebUIMethods
+from bots.zoom_web_bot_adapter.zoom_web_ui_methods import UiZoomWebGenericJoinErrorException, ZoomWebUIMethods
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +23,8 @@ def zoom_meeting_sdk_signature(
     *,
     expiration_seconds: int = 2 * 60 * 60,  # default 2 h
     video_webrtc_mode: int | None = None,
-    sdk_key: str | None = None,
-    sdk_secret: str | None = None,
+    client_id: str | None = None,
+    client_secret: str | None = None,
 ) -> dict[str, str]:
     """
     Create a Zoom Meeting SDK JWT signature.
@@ -30,25 +35,22 @@ def zoom_meeting_sdk_signature(
     role           : 0 for attendee, 1 for host
     expiration_seconds : lifetime for the token (min 1 800, max 172 800)
     video_webrtc_mode  : 0 or 1 (optional)
-    sdk_key, sdk_secret: if omitted, read from env vars
-                         ZOOM_MEETING_SDK_KEY / ZOOM_MEETING_SDK_SECRET
+    client_id, client_secret: str | None
 
     Returns
     -------
     {"signature": "<jwt>", "sdkKey": "<sdk_key>"}
     """
 
-    sdk_key = sdk_key or os.getenv("ZOOM_MEETING_SDK_KEY")
-    sdk_secret = sdk_secret or os.getenv("ZOOM_MEETING_SDK_SECRET")
-    if not sdk_key or not sdk_secret:
-        raise RuntimeError("SDK key/secret missing (env vars or arguments)")
+    if not client_id or not client_secret:
+        raise RuntimeError("Client id or secret is missing")
 
-    iat = int(datetime.utcnow().timestamp())
+    iat = int(datetime.utcnow().timestamp()) - int(os.getenv("ZOOM_WEB_JWT_IAT_OFFSET_SECONDS", 0))
     exp = iat + expiration_seconds
 
     payload = {
-        "appKey": sdk_key,
-        "sdkKey": sdk_key,
+        "appKey": client_id,
+        "sdkKey": client_id,
         "mn": str(meeting_number),
         "role": role,
         "iat": iat,
@@ -58,30 +60,46 @@ def zoom_meeting_sdk_signature(
     if video_webrtc_mode is not None:
         payload["video_webrtc_mode"] = video_webrtc_mode
 
-    token = jwt.encode(payload, sdk_secret, algorithm="HS256")
-    return {"signature": token, "sdkKey": sdk_key}
+    token = jwt.encode(payload, client_secret, algorithm="HS256")
+    return {"signature": token, "sdkKey": client_id}
 
 
 class ZoomWebBotAdapter(WebBotAdapter, ZoomWebUIMethods):
     def __init__(
         self,
         *args,
-        zoom_client_id: str,
-        zoom_client_secret: str,
+        zoom_oauth_credentials_callback: Callable[[], dict[str, str]],
         zoom_closed_captions_language: str | None,
         should_ask_for_recording_permission: bool,
         zoom_tokens: dict,
+        modify_dom_for_video_recording: bool,
+        webinar_user_email: str | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
+        self.modify_dom_for_video_recording = modify_dom_for_video_recording
+        self.webinar_user_email = webinar_user_email
         self.meeting_id, self.meeting_password = parse_zoom_join_url(self.meeting_url)
-        self.sdk_signature = zoom_meeting_sdk_signature(self.meeting_id, 0, sdk_key=zoom_client_id, sdk_secret=zoom_client_secret)
+        self.zoom_oauth_credentials_callback = zoom_oauth_credentials_callback
+
+        # Doing it via callback so we don't store these in-memory
+        zoom_oauth_credentials = self.zoom_oauth_credentials_callback()
+        zoom_client_id = zoom_oauth_credentials["client_id"]
+        zoom_client_secret = zoom_oauth_credentials["client_secret"]
+
+        self.sdk_signature = zoom_meeting_sdk_signature(self.meeting_id, 0, client_id=zoom_client_id, client_secret=zoom_client_secret)
         self.zoom_closed_captions_language = zoom_closed_captions_language
         self.should_ask_for_recording_permission = should_ask_for_recording_permission
         self.zoom_tokens = zoom_tokens
 
-    def get_chromedriver_payload_file_name(self):
-        return "zoom_web_bot_adapter/zoom_web_chromedriver_payload.js"
+        self.generic_join_error_retries = 0
+        self.authorized_user_not_in_meeting_retries = 0
+
+    def get_chromedriver_payload_file_names(self):
+        return [
+            "zoom_web_bot_adapter/zoom_web_chromedriver_payload.js",
+            "zoom_web_bot_adapter/zoom_web_redux_interceptor.js",
+        ]
 
     def get_websocket_port(self):
         return 8765
@@ -91,20 +109,28 @@ class ZoomWebBotAdapter(WebBotAdapter, ZoomWebUIMethods):
         logger.info(f"is_sent_video_still_playing result = {result}")
         return result
 
-    def send_video(self, video_url):
-        logger.info(f"send_video called with video_url = {video_url}")
-        self.driver.execute_script(f"window.botOutputManager.playVideo({json.dumps(video_url)})")
+    def send_video(self, video_url, loop=False, mute_video=False):
+        logger.info(f"send_video called with video_url = {video_url}, loop = {loop}, mute_video = {mute_video}")
+        self.driver.execute_script(f"window.botOutputManager.playVideo({json.dumps(video_url)}, {json.dumps(loop)}, {json.dumps(mute_video)})")
 
     def change_gallery_view_page(self, next_page: bool):
         self.driver.execute_script(f"window?.changeGalleryViewPage({json.dumps(next_page)})")
 
     def send_chat_message(self, text, to_user_uuid):
-        self.driver.execute_script(f"window?.sendChatMessage({json.dumps(text)}, {json.dumps(to_user_uuid)})")
+        self.driver.execute_script("window?.sendChatMessage(arguments[0], arguments[1]);", text, to_user_uuid)
 
     def get_staged_bot_join_delay_seconds(self):
         return 5
 
     def subclass_specific_initial_data_code(self):
+        # Switch which onbehalf token is used based on how many times we've retried on behalf of the authorized user not in the meeting
+        onbehalf_token = select_from_comma_separated_list_with_wrapping_index(
+            comma_separated_list=self.zoom_tokens.get("onbehalf_token", ""),
+            index=self.authorized_user_not_in_meeting_retries,
+        )
+        if onbehalf_token:
+            logger.info(f"Using onbehalf token {(onbehalf_token or '')[:6]}...{(onbehalf_token or '')[-6:]} for retry {self.authorized_user_not_in_meeting_retries}")
+
         return f"""
             window.zoomInitialData = {{
                 signature: {json.dumps(self.sdk_signature["signature"])},
@@ -114,7 +140,9 @@ class ZoomWebBotAdapter(WebBotAdapter, ZoomWebUIMethods):
                 zakToken: {json.dumps(self.zoom_tokens.get("zak_token", ""))},
                 joinToken: {json.dumps(self.zoom_tokens.get("join_token", ""))},
                 appPrivilegeToken: {json.dumps(self.zoom_tokens.get("app_privilege_token", ""))},
-                onBehalfToken: {json.dumps(self.zoom_tokens.get("onbehalf_token", ""))},
+                onBehalfToken: {json.dumps(onbehalf_token or "")},
+                webinarUserEmail: {json.dumps(self.webinar_user_email or "")},
+                modifyDomForVideoRecording: {"true" if self.modify_dom_for_video_recording else "false"},
             }}
         """
 
@@ -143,9 +171,70 @@ class ZoomWebBotAdapter(WebBotAdapter, ZoomWebUIMethods):
             )
             return
 
+        # Special case for app can not anonymous join meeting
+        if reason.get("errorCode") == 4012:
+            self.send_message_callback(
+                {
+                    "message": self.Messages.ZOOM_MEETING_STATUS_FAILED_APP_CAN_NOT_ANONYMOUS_JOIN_MEETING,
+                    "zoom_result_code": str(reason.get("errorCode")) + ": " + str(reason.get("errorMessage")),
+                }
+            )
+            return
+
         self.send_message_callback(
             {
                 "message": self.Messages.ZOOM_MEETING_STATUS_FAILED,
                 "zoom_result_code": str(reason.get("errorCode")) + ": " + str(reason.get("errorMessage")),
             }
         )
+
+    def handle_generic_join_error(self):
+        max_generic_join_error_retries = int(os.getenv("ZOOM_WEB_MAX_GENERIC_JOIN_ERROR_RETRIES", 3))
+        generic_join_error_sleep_time_seconds = float(os.getenv("ZOOM_WEB_GENERIC_JOIN_ERROR_SLEEP_TIME_SECONDS", 5))
+        # If we haven't exceeded the max number of retries, we'll throw the exception which will retry
+        if self.generic_join_error_retries < max_generic_join_error_retries:
+            self.generic_join_error_retries += 1
+
+            logger.warning(f"Bot failed to join because generic join error. Raising UiZoomWebGenericJoinErrorException after sleeping for {generic_join_error_sleep_time_seconds} seconds. Generic join error retry {self.generic_join_error_retries} of {max_generic_join_error_retries}")
+
+            # Recompute signature
+            zoom_oauth_credentials = self.zoom_oauth_credentials_callback()
+            zoom_client_id = zoom_oauth_credentials["client_id"]
+            zoom_client_secret = zoom_oauth_credentials["client_secret"]
+            self.sdk_signature = zoom_meeting_sdk_signature(self.meeting_id, 0, client_id=zoom_client_id, client_secret=zoom_client_secret)
+
+            time.sleep(generic_join_error_sleep_time_seconds)  # Sleep for a bit so we're not constantly retrying
+
+            raise UiZoomWebGenericJoinErrorException("Bot failed to join because generic join error")
+
+        # Otherwise, we'll send the message to the controller to terminate the bot.
+        logger.warning("Bot failed to join because generic join error. Sending message to controller to terminate bot.")
+        self.subclass_specific_handle_failed_to_join(
+            {
+                "method": "join",
+                "errorCode": 1,
+                "errorMessage": "Fail to join the meeting.",
+            }
+        )
+
+    # Currently, it will not show the Gallery view when GPU is disabled
+    def subclass_specific_use_disable_gpu_chrome_option(self):
+        if self.recording_view == RecordingViews.GALLERY_VIEW:
+            return False
+
+        return super().subclass_specific_use_disable_gpu_chrome_option()
+
+    def subclass_specific_domain_allowlist(self):
+        return [
+            "www.zoom.com",
+            "127.0.0.1",
+        ]
+
+    def subclass_specific_chrome_policies(self):
+        if not settings.ENFORCE_DOMAIN_ALLOWLIST_IN_CHROME:
+            return {}
+
+        return {
+            "URLBlocklist": ["*"],
+            "URLAllowlist": self.subclass_specific_domain_allowlist(),
+        }

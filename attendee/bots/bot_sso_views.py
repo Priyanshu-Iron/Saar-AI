@@ -1,4 +1,5 @@
 import logging
+import os
 
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.decorators import method_decorator
@@ -21,10 +22,12 @@ class GoogleMeetSetCookieView(View):
         # There should be a query parameter called "session_id"
         session_id = request.GET.get("session_id")
         if not session_id:
+            logger.warning("GoogleMeetSetCookieView could not set cookie: session_id is missing")
             return HttpResponseBadRequest("Could not set cookie")
 
         # Check in redis store to confirm that a key with the id "google_meet_sign_in_session:<session_id>" exists
         if not get_bot_login_for_google_meet_sign_in_session(session_id):
+            logger.warning("GoogleMeetSetCookieView could not set cookie: no bot login found for session_id")
             return HttpResponseBadRequest("Could not set cookie")
 
         # Set a cookie with the session_id
@@ -32,10 +35,11 @@ class GoogleMeetSetCookieView(View):
         response.set_cookie(
             "google_meet_sign_in_session_id",
             session_id,
-            secure=True,
+            secure=os.getenv("USE_SECURE_COOKIE_FOR_SIGNED_IN_GOOGLE_MEET_BOTS", "true") == "true",
             httponly=True,
             samesite="Lax",
         )
+        logger.info("GoogleMeetSetCookieView successfully set cookie")
         return response
 
 
@@ -50,26 +54,30 @@ class GoogleMeetSignInView(View):
         # Get the session_id from the cookie
         session_id = request.COOKIES.get("google_meet_sign_in_session_id")
         if not session_id:
+            logger.warning("GoogleMeetSignInView could not sign in: session_id is missing")
             return HttpResponseBadRequest("Could not sign in")
 
         # Get the google meet bot login to use from the session id
         google_meet_bot_login = get_bot_login_for_google_meet_sign_in_session(session_id)
         if not google_meet_bot_login:
+            logger.warning("GoogleMeetSignInView could not sign in: no bot login found for session_id")
             return HttpResponseBadRequest("Could not sign in")
 
         saml_request_b64 = request.GET.get("SAMLRequest")
         relay_state = request.GET.get("RelayState")
 
         if not saml_request_b64:
+            logger.warning("GoogleMeetSignInView could not sign in: SAMLRequest is missing")
             return HttpResponseBadRequest("Missing SAMLRequest")
 
         # Create and sign the SAMLResponse
         try:
+            credentials = google_meet_bot_login.get_credentials() or {}
             saml_response_b64, acs_url = _build_sign_in_saml_response(
                 saml_request_b64=saml_request_b64,
                 email_to_sign_in=google_meet_bot_login.email,
-                cert=google_meet_bot_login.cert,
-                private_key=google_meet_bot_login.private_key,
+                cert=credentials.get("cert"),
+                private_key=credentials.get("private_key"),
             )
         except Exception as e:
             logger.exception(f"Failed to create SAMLResponse: {e}")
