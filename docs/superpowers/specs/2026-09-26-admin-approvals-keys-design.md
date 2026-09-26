@@ -77,7 +77,7 @@ Setting keys: `llm_provider` (`openai` | `google`), `llm_model`, `openai_api_key
 - Fernet with `CREDENTIALS_ENCRYPTION_KEY`.
 - In-process cache of decrypted values with a 30-second TTL; `set_setting` clears it.
 - `masked_settings() -> dict`: for each secret key `{set: bool, last4: str | None, updated_at}`; provider and model are returned in full. This is the only shape that reaches the browser.
-- A value that fails to decrypt (key was rotated) is treated as not set and logged once. The admin re-enters it.
+- A value that fails to decrypt (key was rotated) is treated as not set and logged as a warning. The admin re-enters it.
 
 ### Deepgram sync: `app/services/deepgram_sync.py`
 
@@ -89,7 +89,7 @@ Writes Attendee's credential format: `bots_credentials` row with `credential_typ
 
 ### Auth: `app/auth/dependencies.py`
 
-`verify_api_key` is kept (still returns `project_id`) and gains a sibling that resolves the full caller:
+`verify_api_key` is replaced by `get_caller`, which resolves the full caller. The SQL moves to `app/services/accounts_store.py`, which also takes over the account-creation and key-issuing SQL from `routers/auth.py`, so routers can be tested by monkeypatching the store.
 
 ```python
 @dataclass
@@ -129,7 +129,7 @@ All use `require_admin`.
 | `POST /admin/users/{id}/disable` | status `disabled`, `deepgram_sync.revoke`, set `disabled_at` on the user's `bots_apikey` rows. 400 for the admin's own account. |
 | `POST /admin/users/{id}/enable` | status `approved`, `deepgram_sync.grant`. The user logs in again for a new key. |
 | `GET /admin/settings` | `masked_settings()` |
-| `PUT /admin/settings` | Body fields all optional: `llm_provider`, `llm_model`, `openai_api_key`, `google_api_key`, `deepgram_api_key`. Missing or empty strings leave the value unchanged. Saving `deepgram_api_key` calls `deepgram_sync.sync_all`. Returns `masked_settings()`. |
+| `PUT /admin/settings` | Body fields all optional: `llm_provider`, `llm_model`, `openai_api_key`, `google_api_key`, `deepgram_api_key`. Missing or empty strings leave the value unchanged. Saving `deepgram_api_key` calls `deepgram_sync.sync_all`. Changing `llm_provider` without sending `llm_model` resets the model to the new provider's default. Returns `masked_settings()`. |
 
 Unknown user id returns 404. `llm_provider` outside `openai`/`google` returns 422.
 
@@ -166,7 +166,7 @@ Rail item "Admin", rendered only when `isAdmin`. Two tabs, same tab pattern as S
 
 **Users.** A table: email, joined, status, action. Status is plain text, following the identity spec's no-pill rule. A heading line states the count ("2 waiting for approval"). Actions by status: pending shows Approve and Disable, approved shows Disable, disabled shows Enable. The admin's own row has no action. Buttons show a pending state while the request runs; errors use `ErrorNotice`. Empty state when there are no other users.
 
-**AI and keys.** Provider select (OpenAI, Gemini), model field. Three password fields, OpenAI key, Gemini key, Deepgram key, each with a helper line "Set, ends in a1b2 · updated 26 Sep" or "Not set". Fields start empty; typing replaces the stored key. "Save keys" button; on success the fields clear and helper lines refresh; errors inline. A note under the Deepgram field: "Saving updates transcription for every approved account."
+**AI and keys.** Provider select (OpenAI, Gemini), model field. Three password fields, OpenAI key, Gemini key, Deepgram key, each with a helper line "Set, ends in a1b2. Updated 26 Sep 2026." or "Not set" (no middle dots, per the identity spec). Changing the provider resets the model field to that provider's default. When the chosen provider's key is not set, a hint under the select says generation fails until it is. Fields start empty; typing replaces the stored key. "Save keys" button; on success the fields clear and helper lines refresh; errors inline. A note under the Deepgram field: "Saving updates transcription for every approved account."
 
 ### Settings
 
