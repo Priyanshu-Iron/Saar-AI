@@ -1,4 +1,5 @@
 import { useState } from "react";
+import KeysPanel from "../components/admin/KeysPanel";
 import UsersPanel from "../components/admin/UsersPanel";
 import PageHeader from "../components/ui/PageHeader";
 
@@ -33,6 +34,7 @@ export function Admin() {
       </div>
 
       {activeTab === "users" && <UsersPanel />}
+      {activeTab === "keys" && <KeysPanel />}
     </div>
   );
 }
