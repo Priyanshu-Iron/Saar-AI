@@ -290,3 +290,6 @@ pip-selfcheck.json
 
 # frontend source dir, not a Python venv lib
 !frontend/src/lib/
+
+# local database dumps
+backups/
