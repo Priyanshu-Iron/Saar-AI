@@ -26,6 +26,30 @@ def init_saarai_tables():
                 ALTER TABLE saarai_outputs
                 ADD COLUMN IF NOT EXISTS format VARCHAR(10) NOT NULL DEFAULT 'markdown'
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS saarai_user_access (
+                    user_id     INTEGER PRIMARY KEY REFERENCES accounts_user(id) ON DELETE CASCADE,
+                    status      VARCHAR(10) NOT NULL CHECK (status IN ('pending', 'approved', 'disabled')),
+                    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+                    decided_at  TIMESTAMP,
+                    decided_by  INTEGER REFERENCES accounts_user(id) ON DELETE SET NULL
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS saarai_settings (
+                    key              VARCHAR(40) PRIMARY KEY,
+                    value_encrypted  BYTEA NOT NULL,
+                    updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+                    updated_by       INTEGER REFERENCES accounts_user(id) ON DELETE SET NULL
+                )
+            """))
+            # Accounts that predate approvals keep working. Registration always writes
+            # its own row in the same transaction, so new signups never land here.
+            conn.execute(text("""
+                INSERT INTO saarai_user_access (user_id, status, decided_at)
+                SELECT id, 'approved', NOW() FROM accounts_user
+                ON CONFLICT (user_id) DO NOTHING
+            """))
             conn.commit()
     except OperationalError as exc:
         host = os.getenv("DB_HOST", "localhost")
