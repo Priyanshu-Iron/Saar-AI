@@ -4,13 +4,38 @@ import sys
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
+from app import config
 from app.db.connection import engine
+
+
+def _check_admin_email_unique(conn) -> None:
+    """Exit if more than one accounts_user row matches ADMIN_EMAIL, case-insensitively.
+
+    Before this branch registration was case-sensitive, so an existing DB may hold two
+    accounts whose emails lowercase to the same ADMIN_EMAIL; both would otherwise be admin.
+    """
+    admin = config.admin_email()
+    if not admin:
+        return
+    count = conn.execute(
+        text("SELECT COUNT(*) FROM accounts_user WHERE lower(email) = :admin"),
+        {"admin": admin},
+    ).scalar()
+    if count and count > 1:
+        sys.exit(
+            "More than one account matches ADMIN_EMAIL (case-insensitive). "
+            "Remove or rename the extras."
+        )
 
 
 def init_saarai_tables():
     """Create SaarAI's own tables (safe to call multiple times)."""
     try:
         with engine.connect() as conn:
+            access_table_is_new = conn.execute(
+                text("SELECT to_regclass('saarai_user_access') IS NULL")
+            ).scalar()
+
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS saarai_outputs (
                     id SERIAL PRIMARY KEY,
@@ -43,14 +68,19 @@ def init_saarai_tables():
                     updated_by       INTEGER REFERENCES accounts_user(id) ON DELETE SET NULL
                 )
             """))
-            # Accounts that predate approvals keep working. Registration always writes
-            # its own row in the same transaction, so new signups never land here.
-            conn.execute(text("""
-                INSERT INTO saarai_user_access (user_id, status, decided_at)
-                SELECT id, 'approved', NOW() FROM accounts_user
-                ON CONFLICT (user_id) DO NOTHING
-            """))
+            if access_table_is_new:
+                # One-time backfill: accounts that predate approvals keep working.
+                # Registration always writes its own row in the same transaction, so a new
+                # signup is never touched by this, and it never runs again once the table
+                # exists -- an account created outside SaarAI (e.g. via Attendee's own
+                # signup) stays pending instead of getting silently approved on next boot.
+                conn.execute(text("""
+                    INSERT INTO saarai_user_access (user_id, status, decided_at)
+                    SELECT id, 'approved', NOW() FROM accounts_user
+                    ON CONFLICT (user_id) DO NOTHING
+                """))
             conn.commit()
+            _check_admin_email_unique(conn)
     except OperationalError as exc:
         host = os.getenv("DB_HOST", "localhost")
         sys.exit(

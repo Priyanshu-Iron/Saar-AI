@@ -58,8 +58,7 @@ def _rows() -> dict:
     return _cache["rows"]
 
 
-def get_setting(key: str) -> str | None:
-    row = _rows().get(key)
+def _decrypt(key: str, row: dict | None) -> str | None:
     if row is None:
         return None
     try:
@@ -67,6 +66,10 @@ def get_setting(key: str) -> str | None:
     except InvalidToken:
         logger.warning("Setting %s could not be decrypted; treating it as not set.", key)
         return None
+
+
+def get_setting(key: str) -> str | None:
+    return _decrypt(key, _rows().get(key))
 
 
 def set_setting(key: str, value: str, user_id: int | None) -> None:
@@ -77,14 +80,20 @@ def set_setting(key: str, value: str, user_id: int | None) -> None:
 
 
 def masked_settings() -> dict:
-    """The only shape of the settings that reaches the browser."""
+    """The only shape of the settings that reaches the browser.
+
+    Decrypts every key from the same _rows() snapshot: get_setting() re-reads _rows() itself,
+    which can refresh mid-call if another request's set_setting() clears the cache concurrently,
+    so mixing a value from a fresh read with `updated_at` from a stale one can KeyError.
+    """
     rows = _rows()
-    masked: dict = {key: get_setting(key) for key in PLAIN_KEYS}
+    masked: dict = {key: _decrypt(key, rows.get(key)) for key in PLAIN_KEYS}
     for key in SECRET_KEYS:
-        value = get_setting(key)
+        row = rows.get(key)
+        value = _decrypt(key, row)
         masked[key] = {
             "set": value is not None,
             "last4": value[-4:] if value else None,
-            "updated_at": rows[key]["updated_at"].isoformat() if value else None,
+            "updated_at": row["updated_at"].isoformat() if value else None,
         }
     return masked

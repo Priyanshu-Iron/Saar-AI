@@ -65,7 +65,7 @@ SELECT id, 'approved', NOW() FROM accounts_user
 ON CONFLICT (user_id) DO NOTHING;
 ```
 
-The backfill runs on every startup but only inserts for users with no row, and registration always inserts a row in the same transaction as the user, so a new signup is never auto-approved by it.
+The backfill runs once, when `init_saarai_tables()` creates `saarai_user_access` for the first time (checked with `to_regclass('saarai_user_access') IS NULL` before the `CREATE TABLE IF NOT EXISTS`), and never again afterwards. Registration always inserts a row in the same transaction as the user, so a new signup is never auto-approved by it, and an account created outside SaarAI after the table exists stays pending instead of being silently approved on the next restart.
 
 Setting keys: `llm_provider` (`openai` | `google`), `llm_model`, `openai_api_key`, `google_api_key`, `deepgram_api_key`. All values are encrypted, including the non-secret provider and model, so the table has one code path.
 

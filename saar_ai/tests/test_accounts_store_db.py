@@ -65,6 +65,32 @@ def test_account_lifecycle(store, cleanup):
     assert store.lookup_caller(hash_api_key(new_key)) is None
 
 
+def test_backfill_does_not_rerun_after_the_table_exists(store, cleanup):
+    """init_saarai_tables() only backfills 'approved' rows once, when it creates the table.
+
+    A user created afterwards (e.g. an Attendee-only signup with no saarai_user_access row,
+    which create_account() never leaves since it always writes its own row -- so this test
+    removes that row itself) must stay without a row, i.e. pending, across later calls.
+    """
+    from app.db.connection import SessionLocal
+    from app.db.init_saarai_tables import init_saarai_tables as init_tables
+
+    email = f"db-test-{uuid.uuid4().hex[:8]}@example.com"
+    account = store.create_account(email, "not-a-real-hash", "approved")
+    cleanup.append(account["project_id"])
+
+    db = SessionLocal()
+    try:
+        db.execute(text("DELETE FROM saarai_user_access WHERE user_id = :uid"), {"uid": account["user_id"]})
+        db.commit()
+    finally:
+        db.close()
+
+    init_tables()
+
+    assert store.get_user(account["user_id"])["status"] == "pending"
+
+
 def test_deepgram_upsert_and_delete(store, cleanup):
     import json
 
@@ -97,3 +123,28 @@ def test_deepgram_upsert_and_delete(store, cleanup):
         assert db.execute(text("SELECT 1 FROM bots_credentials WHERE project_id = :p"), {"p": pid}).first() is None
     finally:
         db.close()
+
+
+def test_settings_store_round_trip_against_postgres(store):
+    """settings_store's INSERT/UPDATE SQL has only ever run against a mocked _read_rows/_write_row
+    in the unit tests; this exercises it against real Postgres. Never touches the secret keys."""
+    from app.services import settings_store
+
+    prior = settings_store._read_rows().get("llm_model")
+    try:
+        settings_store.set_setting("llm_model", "db-test-model", user_id=None)
+        settings_store.clear_cache()
+        assert settings_store.get_setting("llm_model") == "db-test-model"
+    finally:
+        if prior is not None:
+            settings_store._write_row("llm_model", prior["value_encrypted"], None)
+        else:
+            from app.db.connection import SessionLocal
+
+            db = SessionLocal()
+            try:
+                db.execute(text("DELETE FROM saarai_settings WHERE key = 'llm_model'"))
+                db.commit()
+            finally:
+                db.close()
+        settings_store.clear_cache()

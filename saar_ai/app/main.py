@@ -20,7 +20,9 @@ if os.getenv("SAARAI_SKIP_DB_INIT") != "1":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins(),
-    allow_credentials=True,
+    # Auth is a Bearer header, not cookies. With credentials on and ALLOWED_ORIGINS=*,
+    # Starlette would reflect any origin back in Access-Control-Allow-Origin.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

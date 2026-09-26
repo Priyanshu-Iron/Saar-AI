@@ -58,6 +58,40 @@ def test_reads_are_cached_until_a_write(rows):
     assert settings_store.get_setting("llm_model") == "other"
 
 
+def test_masked_settings_survives_a_cache_refresh_mid_call(monkeypatch):
+    """masked_settings() must decrypt from one snapshot of _rows(), not re-read it per key.
+
+    Simulates another request's set_setting() landing between the initial `rows = _rows()`
+    and a later per-key read: here, every call to _rows() re-reads from a fake backing store
+    that gains the deepgram key partway through. The old code kept `rows[key]["updated_at"]`
+    pinned to the first (stale) snapshot while asking `get_setting()` for a fresh value, so a
+    key absent from the first snapshot but present by the time it was decrypted raised KeyError.
+    """
+    import app.services.settings_store as ss
+
+    calls = {"n": 0}
+
+    def fake_read_rows():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return {}
+        return {
+            "deepgram_api_key": {
+                "value_encrypted": ss.fernet().encrypt(b"dg-wxyz"),
+                "updated_at": datetime(2026, 9, 26, 12, 0),
+            }
+        }
+
+    monkeypatch.setattr(ss, "_read_rows", fake_read_rows)
+    ss.clear_cache()
+    # Bypass the TTL cache entirely so every _rows() call re-reads, standing in for a
+    # concurrent write landing between reads.
+    monkeypatch.setattr(ss, "_rows", fake_read_rows)
+
+    masked = ss.masked_settings()  # must not raise KeyError
+    assert masked["deepgram_api_key"] == {"set": False, "last4": None, "updated_at": None}
+
+
 def test_value_encrypted_with_another_key_reads_as_not_set(rows):
     rows["openai_api_key"] = {
         "value_encrypted": Fernet(Fernet.generate_key()).encrypt(b"sk-old"),

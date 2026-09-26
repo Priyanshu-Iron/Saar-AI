@@ -93,6 +93,11 @@ def test_unknown_user_is_404(api, as_admin, backend):
     assert api.post("/admin/users/99/approve").status_code == 404
 
 
+def test_get_settings_returns_masked_settings(api, as_admin, backend):
+    body = api.get("/admin/settings").json()
+    assert body == admin_router.settings_store.masked_settings()
+
+
 def test_put_settings_ignores_blank_fields(api, as_admin, backend):
     api.put("/admin/settings", json={"openai_api_key": "sk-new", "google_api_key": "  ", "deepgram_api_key": ""})
     assert backend["set"] == [("openai_api_key", "sk-new")]
