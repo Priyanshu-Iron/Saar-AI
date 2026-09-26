@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from app.auth.dependencies import verify_api_key
 from app.services.meeting_fetcher import (
     get_all_bots,
-    get_all_completed_meetings,
     get_meeting_detail,
     get_transcript,
     get_participants,
@@ -101,10 +100,10 @@ def bots_status(project_id: int = Depends(verify_api_key)):
         "bots": [dict(b) for b in bots]
     }
 
-# --- List completed meetings ---
+# --- List all meetings (live and finished), newest first ---
 @router.get("")
 def list_meetings(project_id: int = Depends(verify_api_key)):
-    meetings = get_all_completed_meetings(project_id)
+    meetings = get_all_bots(project_id)
     return {
         "count": len(meetings),
         "meetings": [dict(m) for m in meetings]

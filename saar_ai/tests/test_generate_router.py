@@ -64,7 +64,7 @@ def test_all_saves_each_section_and_reports_failures(client, store, monkeypatch)
     r = client.post("/generate/all/7")
     assert r.status_code == 200
     assert r.json()["done"] == ["mom", "insights"]
-    assert r.json()["failed"] == {"strategy": "provider down"}
+    assert r.json()["failed"] == {"strategy": "Could not generate this section."}
     assert (7, 1, "mom") in store.rows and (7, 1, "strategy") not in store.rows
 
 
@@ -73,7 +73,9 @@ def test_all_returns_502_when_everything_fails(client, store, monkeypatch):
         raise RuntimeError("down")
     for name in ("generate_mom", "generate_insight", "generate_strategy"):
         monkeypatch.setattr(gen, name, boom)
-    assert client.post("/generate/all/7").status_code == 502
+    r = client.post("/generate/all/7")
+    assert r.status_code == 502
+    assert r.json()["detail"] == "Could not generate any section."
 
 
 def test_lock_returns_409_and_clears_after_failure(client, store, monkeypatch):
@@ -85,7 +87,10 @@ def test_lock_returns_409_and_clears_after_failure(client, store, monkeypatch):
     def boom(u, p):
         raise RuntimeError("down")
     monkeypatch.setattr(gen, "generate_mom", boom)
-    assert client.post("/generate/mom/7").status_code == 502
+    r = client.post("/generate/mom/7")
+    assert r.status_code == 502
+    assert isinstance(r.json()["detail"], str)
+    assert r.json()["detail"] == "Could not generate mom."
     assert generation_lock.is_running(7) is False
 
 

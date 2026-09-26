@@ -14,19 +14,6 @@ def get_all_bots(project_id: int):
     finally:
         db.close()
 
-def get_all_completed_meetings(project_id: int):
-    db = SessionLocal()
-    try:
-        query = text("""
-            SELECT id, object_id, name, meeting_url, state, created_at
-            FROM bots_bot
-            WHERE state = 9 AND project_id = :project_id
-            ORDER BY created_at DESC
-        """)
-        return db.execute(query, {"project_id": project_id}).mappings().all()
-    finally:
-        db.close()
-
 def get_meeting_detail(bot_id: int, project_id: int):
     db = SessionLocal()
     try:
@@ -67,7 +54,7 @@ def get_transcript(bot_id: int):
             WHERE r.bot_id = :bot_id
               AND u.transcription IS NOT NULL
               AND TRIM(u.transcription::jsonb ->> 'transcript') <> ''
-            ORDER BY u.timestamp_ms
+            ORDER BY u.timestamp_ms, u.id
         """)
         return db.execute(query, {"bot_id": bot_id}).mappings().all()
     finally:

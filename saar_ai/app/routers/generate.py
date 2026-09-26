@@ -1,13 +1,16 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.dependencies import verify_api_key
-from app.schemas.essence import Insights, Minutes, Strategy
 from app.services import generation_lock
 from app.services.insight_generator import generate_insight
 from app.services.meeting_fetcher import get_participants, get_transcript, verify_bot_access
 from app.services.mom_generator import generate_mom
 from app.services.outputs_store import get_done_types, save_output
 from app.services.strategy_generator import generate_strategy
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/generate", tags=["AI Generation"])
 
@@ -43,10 +46,9 @@ def _generate_single(bot_id: int, project_id: int, output_type: str):
     _lock_or_409(bot_id)
     try:
         result = _run_one(bot_id, project_id, output_type, utterances, participants)
-    except HTTPException:
-        raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Could not generate {output_type}: {exc}") from exc
+        logger.exception("Generating %s failed for bot %s", output_type, bot_id)
+        raise HTTPException(status_code=502, detail=f"Could not generate {output_type}.") from exc
     finally:
         generation_lock.release(bot_id)
     return {"bot_id": bot_id, "type": output_type, "format": "json", "content": result.model_dump()}
@@ -79,12 +81,13 @@ def generate_all(bot_id: int, project_id: int = Depends(verify_api_key)):
             try:
                 _run_one(bot_id, project_id, output_type, utterances, participants)
                 done.append(output_type)
-            except Exception as exc:  # one section failing must not stop the others
-                failed[output_type] = str(exc)
+            except Exception:  # one section failing must not stop the others
+                logger.exception("Generating %s failed for bot %s", output_type, bot_id)
+                failed[output_type] = "Could not generate this section."
     finally:
         generation_lock.release(bot_id)
     if not done:
-        raise HTTPException(status_code=502, detail={"failed": failed})
+        raise HTTPException(status_code=502, detail="Could not generate any section.")
     return {"bot_id": bot_id, "done": done, "failed": failed}
 
 
