@@ -112,7 +112,7 @@ Every endpoint in `routers/meetings.py` and `routers/generate.py` switches from 
 ### Auth routes: `app/routers/auth.py`
 
 - Remove the hardcoded defaults and the Deepgram credential creation from registration.
-- Users are created with Attendee `role='regular'`, not `'admin'`.
+- Attendee `role='admin'` stays: it means admin of the user's own single-user organization, which Attendee needs for project access. It grants nothing across organizations.
 - Registration inserts the `saarai_user_access` row: `approved` if the email is the admin's (and calls `deepgram_sync.grant`), otherwise `pending`.
 - Login: a `disabled` account gets 403 "Your account has been disabled." before a key is issued.
 - Register and login both respond with `{api_key, message, email, status, is_admin}`.
