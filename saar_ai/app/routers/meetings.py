@@ -27,7 +27,6 @@ class CreateMeetingRequest(BaseModel):
 
 # Attendee's Django API runs on a separate port (default 8000)
 ATTENDEE_API_BASE = os.getenv("ATTENDEE_API_URL", "http://localhost:8000")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://rohan-realizing-cicely.ngrok-free.dev/my-ai-handler")
 
 # --- Create Meeting ---
 @router.post("")
@@ -53,8 +52,7 @@ def create_meeting(request: CreateMeetingRequest, authorization: str = Header(..
     }
     
     logger.info(f"Sending bot creation payload to attendee: {payload}")
-    print(f"[DEBUG] Bot creation payload: {payload}")
-    
+
     try:
         resp = httpx.post(
             f"{ATTENDEE_API_BASE}/api/v1/bots",

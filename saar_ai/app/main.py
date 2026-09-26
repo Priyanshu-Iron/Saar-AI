@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.config import allowed_origins, check_config
 from app.routers import auth, meetings, generate
 from app.db.init_saarai_tables import init_saarai_tables
 
@@ -11,13 +12,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Create SaarAI tables on startup. Tests set SAARAI_SKIP_DB_INIT=1.
+# Check config and create SaarAI tables on startup. Tests set SAARAI_SKIP_DB_INIT=1.
 if os.getenv("SAARAI_SKIP_DB_INIT") != "1":
+    check_config()
     init_saarai_tables()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
