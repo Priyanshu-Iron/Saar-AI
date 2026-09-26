@@ -4,7 +4,7 @@ from .base import *
 
 DEBUG = True
 SITE_DOMAIN = "localhost:8000"
-ALLOWED_HOSTS = ["tendee-stripe-hooks.ngrok.io", "localhost", ".ngrok-free.dev", ".ngrok.io", "127.0.0.1"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,.ngrok-free.dev,.ngrok.io,tendee-stripe-hooks.ngrok.io").split(",")
 
 DATABASES = {
     "default": {
