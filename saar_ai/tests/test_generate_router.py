@@ -118,3 +118,18 @@ def test_outputs_has_outputs_false_with_only_markdown(client, store):
 def test_unknown_bot_is_404(client, store):
     assert client.post("/generate/mom/404").status_code == 404
     assert client.get("/generate/status/404").status_code == 404
+
+
+def test_unconfigured_llm_returns_503_with_a_clear_message(client, store, monkeypatch):
+    from app.services.llm_config import LLMNotConfigured
+
+    def not_configured(u, p):
+        raise LLMNotConfigured("No API key is set for openai.")
+
+    monkeypatch.setattr(gen, "generate_mom", not_configured)
+    r = client.post("/generate/mom/7")
+    assert r.status_code == 503
+    assert r.json()["detail"] == "AI provider is not configured. Ask the admin to add a key."
+    all_r = client.post("/generate/all/7")
+    assert all_r.status_code == 503
+    assert not generation_lock.is_running(7)

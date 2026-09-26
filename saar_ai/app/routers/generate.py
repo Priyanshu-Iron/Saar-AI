@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth.dependencies import require_approved
 from app.services import generation_lock
 from app.services.insight_generator import generate_insight
+from app.services.llm_config import LLMNotConfigured
 from app.services.meeting_fetcher import get_participants, get_transcript, verify_bot_access
 from app.services.mom_generator import generate_mom
 from app.services.outputs_store import get_done_types, save_output
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/generate", tags=["AI Generation"])
 
 SECTIONS = ("mom", "insights", "strategy")
+
+NOT_CONFIGURED = "AI provider is not configured. Ask the admin to add a key."
 
 
 def _inputs(bot_id: int, project_id: int):
@@ -46,6 +49,8 @@ def _generate_single(bot_id: int, project_id: int, output_type: str):
     _lock_or_409(bot_id)
     try:
         result = _run_one(bot_id, project_id, output_type, utterances, participants)
+    except LLMNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=NOT_CONFIGURED) from exc
     except Exception as exc:
         logger.exception("Generating %s failed for bot %s", output_type, bot_id)
         raise HTTPException(status_code=502, detail=f"Could not generate {output_type}.") from exc
@@ -81,9 +86,13 @@ def generate_all(bot_id: int, project_id: int = Depends(require_approved)):
             try:
                 _run_one(bot_id, project_id, output_type, utterances, participants)
                 done.append(output_type)
+            except LLMNotConfigured:
+                raise  # no section can succeed without a key
             except Exception:  # one section failing must not stop the others
                 logger.exception("Generating %s failed for bot %s", output_type, bot_id)
                 failed[output_type] = "Could not generate this section."
+    except LLMNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=NOT_CONFIGURED) from exc
     finally:
         generation_lock.release(bot_id)
     if not done:
