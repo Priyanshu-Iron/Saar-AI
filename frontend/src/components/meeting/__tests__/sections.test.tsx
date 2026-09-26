@@ -111,6 +111,14 @@ describe("SectionFrame", () => {
     expect(screen.getByRole("button", { name: "Regenerate for citations" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Old heading" })).toBeInTheDocument();
   });
+  it("shows a regenerate notice above stored content", async () => {
+    const onRetry = vi.fn();
+    render(<SectionFrame id="mom" title="Minutes" state={{ status: "ready", notice: "Could not generate mom." }} onRetry={onRetry}>stored</SectionFrame>);
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not generate mom.");
+    expect(screen.getByText("stored")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalled();
+  });
 });
 
 describe("SectionNav", () => {

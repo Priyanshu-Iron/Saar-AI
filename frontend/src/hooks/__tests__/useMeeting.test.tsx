@@ -55,20 +55,61 @@ describe("useMeeting", () => {
     expect(result.current.essence.strategy.status).toBe("ready");
   });
 
-  it("marks markdown outputs as legacy and still generates missing sections", async () => {
+  it("marks legacy outputs, does not auto-generate, and shows missing sections as errors", async () => {
     vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(meeting(9));
     vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
     vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue({ bot_id: 7, has_outputs: false, outputs: { mom: { format: "markdown", content: "### old", created_at: "x" } } });
-    vi.spyOn(api.generateApi, "all").mockResolvedValue({ bot_id: 7, done: [], failed: {} });
+    const all = vi.spyOn(api.generateApi, "all").mockResolvedValue({ bot_id: 7, done: [], failed: {} });
     vi.spyOn(api.generateApi, "status").mockResolvedValue({ running: false, done: [] });
     const { result } = renderHook(() => useMeeting(7));
     await flush();
-    await waitFor(() => expect(result.current.phase).not.toBe("loading"));
-    await act(async () => { vi.advanceTimersByTime(3000); }); await flush(); await flush();
     await waitFor(() => expect(result.current.phase).toBe("ready"));
+    expect(all).not.toHaveBeenCalled();
     expect(result.current.essence.mom.status).toBe("legacy");
     expect(result.current.essence.mom.markdown).toBe("### old");
-    expect(result.current.essence.insights.status).toBe("error");
+    expect(result.current.essence.insights).toEqual({ status: "error", error: "This section wasn't generated." });
+    expect(result.current.essence.strategy.status).toBe("error");
+  });
+
+  it("waits for a running generation when some outputs already exist", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(meeting(9));
+    vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
+    vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue(jsonOutputs(["mom"]));
+    const all = vi.spyOn(api.generateApi, "all");
+    vi.spyOn(api.generateApi, "status").mockResolvedValue({ running: true, done: ["mom"] });
+    const { result } = renderHook(() => useMeeting(7));
+    await flush();
+    await waitFor(() => expect(result.current.phase).toBe("generating"));
+    expect(all).not.toHaveBeenCalled();
+    expect(result.current.essence.mom.status).toBe("ready");
+    expect(result.current.essence.insights.status).toBe("generating");
+    expect(result.current.essence.strategy.status).toBe("generating");
+  });
+
+  it("shows unfinished sections as errors when no generation is running", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(meeting(9));
+    vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
+    vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue(jsonOutputs(["mom"]));
+    const all = vi.spyOn(api.generateApi, "all");
+    vi.spyOn(api.generateApi, "status").mockResolvedValue({ running: false, done: ["mom"] });
+    const { result } = renderHook(() => useMeeting(7));
+    await flush();
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    expect(all).not.toHaveBeenCalled();
+    expect(result.current.essence.mom.status).toBe("ready");
+    expect(result.current.essence.insights).toEqual({ status: "error", error: "This section wasn't generated." });
+    expect(result.current.essence.strategy.status).toBe("error");
+  });
+
+  it("never auto-generates a deleted (state 10) meeting", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(meeting(10));
+    vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
+    vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue(jsonOutputs([]));
+    const all = vi.spyOn(api.generateApi, "all");
+    const { result } = renderHook(() => useMeeting(7));
+    await flush();
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    expect(all).not.toHaveBeenCalled();
   });
 
   it("treats a 409 from generate as already running", async () => {
@@ -108,6 +149,34 @@ describe("useMeeting", () => {
     await act(async () => { await result.current.regenerate("mom"); });
     expect(mom).toHaveBeenCalledWith(7);
     expect(result.current.essence.mom.status).toBe("ready");
+  });
+
+  it("a failed regenerate keeps stored content and attaches a notice", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(meeting(9));
+    vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
+    vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue(jsonOutputs(["mom", "insights", "strategy"]));
+    vi.spyOn(api.generateApi, "mom").mockRejectedValue(new api.ApiError(500, "Could not generate mom."));
+    const { result } = renderHook(() => useMeeting(7));
+    await flush();
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    await act(async () => { await result.current.regenerate("mom"); });
+    expect(result.current.essence.mom.status).toBe("ready");
+    expect(result.current.essence.mom.data).toEqual(minutes);
+    expect(result.current.essence.mom.notice).toBe("Could not generate mom.");
+  });
+
+  it("a 409 on regenerate keeps the section generating", async () => {
+    vi.spyOn(api.meetingsApi, "detail").mockResolvedValue(meeting(9));
+    vi.spyOn(api.meetingsApi, "transcript").mockResolvedValue(transcript(1));
+    vi.spyOn(api.meetingsApi, "outputs").mockResolvedValue(jsonOutputs(["mom", "insights", "strategy"]));
+    vi.spyOn(api.generateApi, "mom").mockRejectedValue(new api.ApiError(409, "Generation already running"));
+    vi.spyOn(api.generateApi, "status").mockResolvedValue({ running: true, done: [] });
+    const { result } = renderHook(() => useMeeting(7));
+    await flush();
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    await act(async () => { await result.current.regenerate("mom"); });
+    expect(result.current.essence.mom.status).toBe("generating");
+    expect(result.current.phase).toBe("generating");
   });
 
   it("clears a stale error once a poll succeeds", async () => {

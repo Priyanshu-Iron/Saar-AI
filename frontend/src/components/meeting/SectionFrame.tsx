@@ -11,6 +11,9 @@ export function SectionFrame({ id, title, state, onRetry, children }: SectionFra
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-24 py-6 first:pt-0">
       <h2 id={`${id}-heading`} className="text-h2">{title}</h2>
+      {state.notice && (state.status === "ready" || state.status === "legacy") && (
+        <ErrorNotice className="mt-4" message={state.notice} onRetry={onRetry} />
+      )}
       {state.status === "generating" ? (
         <div className="mt-4 space-y-3" aria-busy="true">
           <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" />

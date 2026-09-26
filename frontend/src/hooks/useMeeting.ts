@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ApiError, generateApi, meetingsApi, SECTION_KEYS,
   type Insights, type Meeting, type Minutes, type OutputsResponse, type Participant, type SectionKey, type Strategy, type Utterance,
@@ -14,6 +14,8 @@ export type SectionState = {
   markdown?: string;
   createdAt?: string;
   error?: string;
+  /** A failed regenerate on a section that still has stored content. */
+  notice?: string;
 };
 export type IndexedUtterance = Utterance & { index: number };
 export type MeetingView = {
@@ -41,6 +43,17 @@ function essenceFrom(res: OutputsResponse, previous: Record<SectionKey, SectionS
     else if (generating) next[key] = { status: "generating" };
     else if (previous[key].status === "generating") next[key] = { status: "error", error: "Could not generate this section." };
     else next[key] = previous[key].status === "error" ? previous[key] : { status: "empty" };
+  }
+  return next;
+}
+
+const NOT_GENERATED = "This section wasn't generated.";
+
+/** Sections with no stored output of either format become errors the user can retry. */
+function markMissing(res: OutputsResponse, essence: Record<SectionKey, SectionState>): Record<SectionKey, SectionState> {
+  const next = { ...essence };
+  for (const key of SECTION_KEYS) {
+    if (!res.outputs[key]) next[key] = { status: "error", error: NOT_GENERATED };
   }
   return next;
 }
@@ -87,19 +100,37 @@ export function useMeeting(botId: number): MeetingView {
     }
   }, [botId]);
 
-  // Once the meeting is finished: show structured outputs if present, otherwise generate once.
-  const settleFinished = useCallback(async (isCancelled: () => boolean) => {
-    const res = await loadOutputs(false);
+  // Once the meeting is finished. Only a state-9 meeting with no outputs at all auto-generates;
+  // otherwise ask whether a generation is running (reload, second tab) and either wait for it
+  // or show the missing sections as errors with Try again.
+  const settleFinished = useCallback(async (state: number, isCancelled: () => boolean) => {
+    const res = await meetingsApi.outputs(botId);
     if (isCancelled()) return;
-    const hasJson = SECTION_KEYS.some((k) => res.outputs[k]?.format === "json");
-    if (hasJson) { setPhase("ready"); return; }
-    setEssence((prev) => essenceFrom(res, prev, true));
-    setPhase("generating");
-    generateApi.all(botId).catch((err) => {
-      if (err instanceof ApiError && err.status === 409) return; // already running elsewhere
-      if (!isCancelled()) setError(err instanceof Error ? err.message : "Generation failed.");
-    });
-  }, [botId, loadOutputs]);
+    const present = SECTION_KEYS.filter((k) => res.outputs[k]);
+    if (present.length === 0 && state === 9) {
+      setEssence((prev) => essenceFrom(res, prev, true));
+      setPhase("generating");
+      generateApi.all(botId).catch((err) => {
+        if (err instanceof ApiError && err.status === 409) return; // already running elsewhere
+        if (!isCancelled()) setError(err instanceof Error ? err.message : "Generation failed.");
+      });
+      return;
+    }
+    if (present.length === 0 || present.length === SECTION_KEYS.length) {
+      setEssence((prev) => essenceFrom(res, prev, false));
+      setPhase("ready");
+      return;
+    }
+    const running = await generateApi.status(botId).then((s) => s.running, () => false);
+    if (isCancelled()) return;
+    if (running) {
+      setEssence((prev) => essenceFrom(res, prev, true));
+      setPhase("generating");
+    } else {
+      setEssence((prev) => markMissing(res, essenceFrom(res, prev, false)));
+      setPhase("ready");
+    }
+  }, [botId]);
 
   // Initial load and phase decision.
   useEffect(() => {
@@ -111,11 +142,11 @@ export function useMeeting(botId: number): MeetingView {
       if (!m || cancelled) return;
       await loadTranscript().catch(() => undefined);
       const next = phaseFor(m.state);
-      if (next === "ready") await settleFinished(() => cancelled);
+      if (next === "ready") await settleFinished(m.state, () => cancelled);
       else setPhase(next);
     })();
     return () => { cancelled = true; };
-  }, [botId, reloadKey, loadDetail, loadTranscript, loadOutputs, settleFinished]);
+  }, [botId, reloadKey, loadDetail, loadTranscript, settleFinished]);
 
   // Live and processing: poll detail (and transcript when live) until finished.
   const livePolling = phase === "live" || phase === "processing";
@@ -125,7 +156,7 @@ export function useMeeting(botId: number): MeetingView {
     if (phase === "live") await loadTranscript().catch(() => undefined);
     const next = phaseFor(m.state);
     if (next === "failed") setPhase("failed");
-    else if (isFinishedState(m.state)) await settleFinished(() => false);
+    else if (isFinishedState(m.state)) await settleFinished(m.state, () => false);
     else if (next !== phase) setPhase(next);
   }, livePolling ? LIVE_MS : null, false);
 
@@ -139,14 +170,26 @@ export function useMeeting(botId: number): MeetingView {
     }
   }, phase === "generating" ? STATUS_MS : null, false);
 
+  const essenceRef = useRef(essence);
+  essenceRef.current = essence;
+
   const regenerate = useCallback(async (section: SectionKey) => {
+    const previous = essenceRef.current[section];
     setEssence((prev) => ({ ...prev, [section]: { status: "generating" } }));
     try {
       const res = await generateApi[section](botId);
       setEssence((prev) => ({ ...prev, [section]: { status: "ready", data: res.content, createdAt: new Date().toISOString() } }));
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setPhase("generating"); // another generation holds the lock; the status poll picks it up
+        return;
+      }
       const message = err instanceof Error ? err.message : "Could not generate this section.";
-      setEssence((prev) => ({ ...prev, [section]: { status: "error", error: message } }));
+      const keepsContent = previous.status === "ready" || previous.status === "legacy";
+      setEssence((prev) => ({
+        ...prev,
+        [section]: keepsContent ? { ...previous, notice: message } : { status: "error", error: message },
+      }));
     }
   }, [botId]);
 
