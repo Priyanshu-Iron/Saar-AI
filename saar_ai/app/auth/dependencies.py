@@ -1,35 +1,52 @@
 # app/auth/dependencies.py
-import hashlib
-from fastapi import Header, HTTPException
-from sqlalchemy import text
-from app.db.connection import SessionLocal
+from dataclasses import dataclass
 
-def verify_api_key(authorization: str = Header(...)) -> int:
-    """
-    Extract API key from 'Bearer <key>' header,
-    verify against bots_apikey table,
-    return project_id for data isolation.
-    """
+from fastapi import Depends, Header, HTTPException
+
+from app.auth.utils import hash_api_key
+from app.config import admin_email
+from app.services import accounts_store
+
+
+@dataclass(frozen=True)
+class Caller:
+    user_id: int
+    project_id: int
+    email: str
+    status: str  # pending | approved | disabled
+    is_admin: bool
+
+
+def is_admin_email(email: str) -> bool:
+    admin = admin_email()
+    return bool(admin) and email.strip().lower() == admin
+
+
+def get_caller(authorization: str = Header(...)) -> Caller:
+    """Resolve 'Bearer <key>' to the account behind it."""
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
-    
-    api_key = authorization.replace("Bearer ", "")
-    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-    
-    db = SessionLocal()
-    try:
-        result = db.execute(
-            text("""
-                SELECT project_id FROM bots_apikey 
-                WHERE key_hash = :key_hash 
-                AND disabled_at IS NULL
-            """),
-            {"key_hash": key_hash}
-        ).mappings().first()
-        
-        if not result:
-            raise HTTPException(status_code=401, detail="Invalid or disabled API key")
-        
-        return result["project_id"]
-    finally:
-        db.close()
+    row = accounts_store.lookup_caller(hash_api_key(authorization.removeprefix("Bearer ").strip()))
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid or disabled API key")
+    admin = is_admin_email(row["email"])
+    return Caller(
+        user_id=row["user_id"],
+        project_id=row["project_id"],
+        email=row["email"],
+        status="approved" if admin else (row["status"] or "pending"),
+        is_admin=admin,
+    )
+
+
+def require_approved(caller: Caller = Depends(get_caller)) -> int:
+    """Gate for data and paid endpoints. Returns the caller's project_id."""
+    if caller.status != "approved":
+        raise HTTPException(status_code=403, detail=f"account_{caller.status}")
+    return caller.project_id
+
+
+def require_admin(caller: Caller = Depends(get_caller)) -> Caller:
+    if not caller.is_admin:
+        raise HTTPException(status_code=403, detail="admin_only")
+    return caller

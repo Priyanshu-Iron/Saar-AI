@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.auth.dependencies import verify_api_key
+from app.auth.dependencies import require_approved
 from app.services import generation_lock
 from app.services.insight_generator import generate_insight
 from app.services.meeting_fetcher import get_participants, get_transcript, verify_bot_access
@@ -55,22 +55,22 @@ def _generate_single(bot_id: int, project_id: int, output_type: str):
 
 
 @router.post("/mom/{bot_id}")
-def generate_meeting_mom(bot_id: int, project_id: int = Depends(verify_api_key)):
+def generate_meeting_mom(bot_id: int, project_id: int = Depends(require_approved)):
     return _generate_single(bot_id, project_id, "mom")
 
 
 @router.post("/insights/{bot_id}")
-def generate_meeting_insights(bot_id: int, project_id: int = Depends(verify_api_key)):
+def generate_meeting_insights(bot_id: int, project_id: int = Depends(require_approved)):
     return _generate_single(bot_id, project_id, "insights")
 
 
 @router.post("/strategy/{bot_id}")
-def generate_meeting_strategy(bot_id: int, project_id: int = Depends(verify_api_key)):
+def generate_meeting_strategy(bot_id: int, project_id: int = Depends(require_approved)):
     return _generate_single(bot_id, project_id, "strategy")
 
 
 @router.post("/all/{bot_id}")
-def generate_all(bot_id: int, project_id: int = Depends(verify_api_key)):
+def generate_all(bot_id: int, project_id: int = Depends(require_approved)):
     """Run all three generators, saving after each, and report what succeeded."""
     utterances, participants = _inputs(bot_id, project_id)
     _lock_or_409(bot_id)
@@ -92,7 +92,7 @@ def generate_all(bot_id: int, project_id: int = Depends(verify_api_key)):
 
 
 @router.get("/status/{bot_id}")
-def generation_status(bot_id: int, project_id: int = Depends(verify_api_key)):
+def generation_status(bot_id: int, project_id: int = Depends(require_approved)):
     if not verify_bot_access(bot_id, project_id):
         raise HTTPException(status_code=404, detail="Meeting not found")
     return {"running": generation_lock.is_running(bot_id), "done": get_done_types(bot_id, project_id)}

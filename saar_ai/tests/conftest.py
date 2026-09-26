@@ -10,13 +10,35 @@ os.environ["CREDENTIALS_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 import pytest
 from fastapi.testclient import TestClient
 
-from app.auth.dependencies import verify_api_key
+from app.auth.dependencies import Caller, get_caller, require_approved
 from app.main import app
+
+BASE_CALLER = {"user_id": 2, "project_id": 1, "email": "user@example.com", "status": "approved", "is_admin": False}
 
 
 @pytest.fixture
 def client():
-    app.dependency_overrides[verify_api_key] = lambda: 1
+    """Client for route tests that don't care about auth: every call is project 1."""
+    app.dependency_overrides[require_approved] = lambda: 1
     with TestClient(app) as c:
         yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def api():
+    """Client with real auth gates; pair with as_caller."""
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def as_caller():
+    def use(**overrides) -> Caller:
+        caller = Caller(**{**BASE_CALLER, **overrides})
+        app.dependency_overrides[get_caller] = lambda: caller
+        return caller
+
+    yield use
     app.dependency_overrides.clear()

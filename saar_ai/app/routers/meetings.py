@@ -5,7 +5,7 @@ import string
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
-from app.auth.dependencies import verify_api_key
+from app.auth.dependencies import require_approved
 from app.services.meeting_fetcher import (
     get_all_bots,
     get_meeting_detail,
@@ -30,7 +30,7 @@ ATTENDEE_API_BASE = os.getenv("ATTENDEE_API_URL", "http://localhost:8000")
 
 # --- Create Meeting ---
 @router.post("")
-def create_meeting(request: CreateMeetingRequest, authorization: str = Header(...), project_id: int = Depends(verify_api_key)):
+def create_meeting(request: CreateMeetingRequest, authorization: str = Header(...), project_id: int = Depends(require_approved)):
     """
     Forwards the bot creation request to the attendee Django API,
     which properly dispatches the Celery run_bot task so the bot actually joins.
@@ -91,7 +91,7 @@ def create_meeting(request: CreateMeetingRequest, authorization: str = Header(..
 
 # --- Bot status (all states) ---
 @router.get("/bots/status")
-def bots_status(project_id: int = Depends(verify_api_key)):
+def bots_status(project_id: int = Depends(require_approved)):
     bots = get_all_bots(project_id)
     return {
         "count": len(bots),
@@ -100,7 +100,7 @@ def bots_status(project_id: int = Depends(verify_api_key)):
 
 # --- List all meetings (live and finished), newest first ---
 @router.get("")
-def list_meetings(project_id: int = Depends(verify_api_key)):
+def list_meetings(project_id: int = Depends(require_approved)):
     meetings = get_all_bots(project_id)
     return {
         "count": len(meetings),
@@ -109,14 +109,14 @@ def list_meetings(project_id: int = Depends(verify_api_key)):
 
 # --- Recent finished meetings with a one-line teaser (Dashboard) ---
 @router.get("/recent")
-def recent_meetings(limit: int = 5, project_id: int = Depends(verify_api_key)):
+def recent_meetings(limit: int = 5, project_id: int = Depends(require_approved)):
     limit = max(1, min(limit, 20))
     meetings = get_recent_with_teasers(project_id, limit)
     return {"count": len(meetings), "meetings": meetings}
 
 # --- Meeting detail ---
 @router.get("/{bot_id}")
-def meeting_detail(bot_id: int, project_id: int = Depends(verify_api_key)):
+def meeting_detail(bot_id: int, project_id: int = Depends(require_approved)):
     if not verify_bot_access(bot_id, project_id):
         raise HTTPException(status_code=404, detail="Meeting not found")
     
@@ -130,7 +130,7 @@ def meeting_detail(bot_id: int, project_id: int = Depends(verify_api_key)):
 
 # --- Transcript ---
 @router.get("/{bot_id}/transcript")
-def meeting_transcript(bot_id: int, project_id: int = Depends(verify_api_key)):
+def meeting_transcript(bot_id: int, project_id: int = Depends(require_approved)):
     if not verify_bot_access(bot_id, project_id):
         raise HTTPException(status_code=404, detail="Meeting not found")
     
@@ -143,7 +143,7 @@ def meeting_transcript(bot_id: int, project_id: int = Depends(verify_api_key)):
 
 # --- Chat messages ---
 @router.get("/{bot_id}/chat")
-def meeting_chat(bot_id: int, project_id: int = Depends(verify_api_key)):
+def meeting_chat(bot_id: int, project_id: int = Depends(require_approved)):
     if not verify_bot_access(bot_id, project_id):
         raise HTTPException(status_code=404, detail="Meeting not found")
     
@@ -156,7 +156,7 @@ def meeting_chat(bot_id: int, project_id: int = Depends(verify_api_key)):
 
 # --- Saved AI outputs ---
 @router.get("/{bot_id}/outputs")
-def meeting_outputs(bot_id: int, project_id: int = Depends(verify_api_key)):
+def meeting_outputs(bot_id: int, project_id: int = Depends(require_approved)):
     if not verify_bot_access(bot_id, project_id):
         raise HTTPException(status_code=404, detail="Meeting not found")
     outputs = get_outputs(bot_id, project_id)
